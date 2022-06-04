@@ -1,0 +1,36 @@
+[package]
+name = "pixelbuster"
+version = "0.1.0"
+authors = ["Beinsezii <beinsezii@gmail.com>"]
+edition = "2021"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[lib]
+crate-type = ["cdylib"]
+
+[dependencies]
+num_cpus = "1"
+rand = "0.8"
+crossbeam = "0.8"
+
+eframe = {version = "0.18", optional = true}
+image = {version = "0.24", optional = true}
+
+[features]
+default = ["gui"]
+gui = ["dep:eframe", "dep:image"]
+
+[profile.dev]
+opt-level = 1
+
+[profile.release]
+lto = true
+opt-level = 3
+codegen-units = 1
+strip = true
+
+[profile.bench]
+lto = true
+opt-level = 3
+codegen-units = 1
