@@ -1,4 +1,4 @@
-use crate::pb_core::{parse_ops, process_multi, Color};
+use crate::pb_core::{parse_ops, process_multi, Space};
 
 use std::path::Path;
 use std::time::{Duration, Instant};
@@ -122,6 +122,7 @@ impl PBGui {
         }
     }
 
+    // TODO: Half/Quarter res preview.
     fn process(&mut self, ctx: &Context) {
         // fetch data
         let i_pre = Instant::now();
@@ -137,35 +138,14 @@ impl PBGui {
         // parse into ops
         let i_parse = Instant::now();
 
-        let ops = parse_ops(&self.code, String::from("lcha"));
+        let ops = parse_ops(&self.code, Space::SRGB);
 
         self.t_parse = Instant::now() - i_parse;
 
         // actually process
         let i_proc = Instant::now();
 
-        for pixel in pixels.chunks_mut(4) {
-            let conv = Color {
-                r: pixel[0],
-                g: pixel[1],
-                b: pixel[2],
-            }
-            .as_lch();
-            pixel[0] = conv[0];
-            pixel[1] = conv[1];
-            pixel[2] = conv[2];
-        }
-
         process_multi(&ops, &mut pixels, Some(vdefaults));
-
-        for pixel in pixels.chunks_mut(4) {
-            let mut conv = Color::default();
-            conv.set_lch([pixel[0], pixel[1], pixel[2]]);
-            let conv = conv.as_srgb();
-            pixel[0] = conv[0];
-            pixel[1] = conv[1];
-            pixel[2] = conv[2];
-        }
 
         self.t_proc = Instant::now() - i_proc;
 
