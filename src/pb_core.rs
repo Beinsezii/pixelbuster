@@ -457,13 +457,14 @@ pub fn process_segment<O: AsRef<[Operation]>>(
     };
 
     let orig_space = space;
+    let vdefaults = vdefaults.unwrap_or([0.0_f32; 9]);
 
     // TODO: std's new packed_simd
     for pixel in pixels.chunks_mut(4) {
         // reset space transforms for each pixel
         space = orig_space;
         // reset vars each iter
-        let mut v = vdefaults.unwrap_or([0.0_f32; 9]);
+        let mut v = vdefaults;
         for op in ops.iter() {
             match op {
                 Operation::Process {
