@@ -3,11 +3,11 @@ use pixelbuster::pb_core::{parse_ops, process_multi, Space};
 use std::path::Path;
 use std::time::{Duration, Instant};
 
-use eframe::egui::{Slider, Style, Visuals};
+use eframe::egui;
 use eframe::{
     egui::{
         panel::{CentralPanel, SidePanel},
-        ColorImage, Context, TextureHandle,
+        ColorImage, Context, Slider, Style, TextureHandle, Visuals,
     },
     App, Frame,
 };
@@ -70,12 +70,18 @@ impl App for PBGui {
                 self.t_post.as_secs_f64() * 1000.0
             ));
         });
-        CentralPanel::default().show(ctx, |ui| {
-            let s = ctx.available_rect().size();
-            let (w, h) = (self.img.width() as f32, self.img.height() as f32);
-            let scale = (w / s.x).max(h / s.y);
-            ui.image(&self.tex, &[w / scale, h / scale]);
-        });
+        CentralPanel::default()
+            .frame(
+                egui::containers::Frame::window(&ctx.style())
+                    .inner_margin(0.0)
+                    .outer_margin(0.0),
+            )
+            .show(ctx, |ui| {
+                let s = ctx.available_rect().size();
+                let (w, h) = (self.img.width() as f32, self.img.height() as f32);
+                let scale = (w / s.x).max(h / s.y);
+                ui.image(&self.tex, &[w / scale, h / scale]);
+            });
     }
 }
 
