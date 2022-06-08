@@ -1,7 +1,7 @@
 //TODO: process() = parse_ops() + process_multi()
 use std::f32::consts::PI;
 
-use crossbeam::scope;
+use crossbeam_utils::thread::scope;
 use rand::random;
 
 #[derive(Clone, Copy, PartialEq, Eq)]
