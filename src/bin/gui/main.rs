@@ -10,7 +10,7 @@ fn main() {
         eframe::run_native(
             "My egui App",
             native_options,
-            Box::new(|cc| Box::new(gui::PBGui::new(cc, args_os().nth(1).unwrap()))),
+            Box::new(|cc| Box::new(gui::PBGui::new(cc, args_os().nth(1)))),
         );
     }
 

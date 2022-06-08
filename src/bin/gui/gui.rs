@@ -18,8 +18,7 @@ use image::{io::Reader, DynamicImage};
 
 pub struct PBGui {
     code: String,
-    img: DynamicImage,
-    tex: TextureHandle,
+    data: Option<(DynamicImage, TextureHandle)>,
     t_pre: Duration,
     t_parse: Duration,
     t_proc: Duration,
@@ -91,16 +90,26 @@ impl App for PBGui {
                     .outer_margin(0.0),
             )
             .show(ctx, |ui| {
-                let s = ctx.available_rect().size();
-                let (w, h) = (self.img.width() as f32, self.img.height() as f32);
-                let scale = (w / s.x).max(h / s.y);
-                ui.image(&self.tex, &[w / scale, h / scale]);
+                match ctx.input().raw.dropped_files.get(0) {
+                    Some(f) => {
+                        if let Some(p) = &f.path {
+                            self.load(ctx, p)
+                        }
+                    }
+                    None => (),
+                }
+                if let Some((img, tex)) = self.data.as_ref() {
+                    let s = ctx.available_rect().size();
+                    let (w, h) = (img.width() as f32, img.height() as f32);
+                    let scale = (w / s.x).max(h / s.y);
+                    ui.image(tex, &[w / scale, h / scale]);
+                }
             });
     }
 }
 
 impl PBGui {
-    pub fn new<P: AsRef<Path>>(cc: &eframe::CreationContext<'_>, path: P) -> Self {
+    pub fn new<P: AsRef<Path>>(cc: &eframe::CreationContext<'_>, path: Option<P>) -> Self {
         // Customize egui here with cc.egui_ctx.set_fonts and cc.egui_ctx.set_visuals.
         // Restore app state using cc.storage (requires the "persistence" feature).
         // Use the cc.gl (a glow::Context) to create graphics shaders and buffers that you can use
@@ -114,25 +123,9 @@ impl PBGui {
             ..Default::default()
         });
 
-        let img = Reader::open(path)
-            .unwrap()
-            .with_guessed_format()
-            .unwrap()
-            .decode()
-            .unwrap();
-
-        let tex = cc.egui_ctx.load_texture(
-            "img",
-            ColorImage::from_rgba_unmultiplied(
-                [img.width() as usize, img.height() as usize],
-                &img.to_rgba8(),
-            ),
-        );
-
-        Self {
+        let mut result = Self {
             code: String::new(),
-            img,
-            tex,
+            data: None,
             t_pre: Duration::default(),
             t_parse: Duration::default(),
             t_proc: Duration::default(),
@@ -141,50 +134,81 @@ impl PBGui {
             v_maxes: [1.0; 9],
             v_checks: [false; 9],
             vdefaults: [0.0; 9],
+        };
+
+        if let Some(p) = path {
+            result.load(&cc.egui_ctx, p)
+        }
+
+        result
+    }
+
+    fn load<P: AsRef<Path>>(&mut self, ctx: &Context, path: P) {
+        if let Some(data) = Reader::open(path)
+            .ok()
+            .map(|r| r.with_guessed_format().ok())
+            .flatten()
+            .map(|r| r.decode().ok())
+            .flatten()
+            .map(move |img| {
+                let ctx = ctx.load_texture(
+                    "img",
+                    ColorImage::from_rgba_unmultiplied(
+                        [img.width() as usize, img.height() as usize],
+                        &img.to_rgba8(),
+                    ),
+                );
+                Some((img, ctx))
+            })
+        {
+            self.data = data;
+            self.process(ctx);
         }
     }
 
     // TODO: Half/Quarter res preview.
     fn process(&mut self, ctx: &Context) {
-        // fetch data
-        let i_pre = Instant::now();
-        let mut pixels = self.img.to_rgba32f();
-        let mut vdefaults = self.vdefaults;
-        self.v_checks.iter().enumerate().for_each(|(n, v)| {
-            if !v {
-                vdefaults[n] = 0.0
-            }
-        });
-        self.t_pre = Instant::now() - i_pre;
+        if let Some((img, tex)) = self.data.as_mut() {
+            // fetch data
+            let i_pre = Instant::now();
+            let mut pixels = img.to_rgba32f();
+            let mut vdefaults = self.vdefaults;
+            self.v_checks.iter().enumerate().for_each(|(n, v)| {
+                if !v {
+                    vdefaults[n] = 0.0
+                }
+            });
+            self.t_pre = Instant::now() - i_pre;
 
-        // parse into ops
-        let i_parse = Instant::now();
+            // parse into ops
+            let i_parse = Instant::now();
 
-        let ops = parse_ops(&self.code, Space::SRGB);
+            let ops = parse_ops(&self.code, Space::SRGB);
 
-        self.t_parse = Instant::now() - i_parse;
+            self.t_parse = Instant::now() - i_parse;
 
-        // actually process
-        let i_proc = Instant::now();
+            // actually process
+            let i_proc = Instant::now();
 
-        process_multi(&ops, &mut pixels, Some(vdefaults));
+            process_multi(&ops, &mut pixels, Some(vdefaults));
 
-        self.t_proc = Instant::now() - i_proc;
+            self.t_proc = Instant::now() - i_proc;
 
-        // post process aka convert into texture readable data
-        let i_post = Instant::now();
-        let pixels = pixels
-            .into_iter()
-            .map(|p| (p * 255.0) as u8)
-            .collect::<Vec<u8>>();
-        self.t_post = Instant::now() - i_post;
+            // post process aka convert into texture readable data
+            let i_post = Instant::now();
+            let pixels = pixels
+                .into_iter()
+                .map(|p| (p * 255.0) as u8)
+                .collect::<Vec<u8>>();
+            self.t_post = Instant::now() - i_post;
 
-        self.tex = ctx.load_texture(
-            "img",
-            ColorImage::from_rgba_unmultiplied(
-                [self.img.width() as usize, self.img.height() as usize],
-                pixels.as_ref(),
-            ),
-        );
+            *tex = ctx.load_texture(
+                "img",
+                ColorImage::from_rgba_unmultiplied(
+                    [img.width() as usize, img.height() as usize],
+                    pixels.as_ref(),
+                ),
+            );
+        }
     }
 }
