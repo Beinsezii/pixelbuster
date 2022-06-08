@@ -125,7 +125,7 @@ impl PBGui {
             "img",
             ColorImage::from_rgba_unmultiplied(
                 [img.width() as usize, img.height() as usize],
-                &img.clone().to_rgba8(),
+                &img.to_rgba8(),
             ),
         );
 
