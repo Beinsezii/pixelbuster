@@ -53,6 +53,7 @@ impl App for PBGui {
                 for (n, b) in self.v_checks.iter().enumerate() {
                     if *b {
                         let slider = Slider::new(&mut self.vdefaults[n], -1.0..=1.0)
+                            .prefix(format!("v{}: ", n + 1))
                             .smart_aim(true)
                             .clamp_to_range(false);
                         if ui.add(slider).drag_released() {
