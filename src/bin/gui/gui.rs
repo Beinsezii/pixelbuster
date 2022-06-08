@@ -8,7 +8,8 @@ use eframe::{
     egui::{
         containers::ScrollArea,
         panel::{CentralPanel, SidePanel},
-        ColorImage, Context, Slider, Style, TextureHandle, Visuals,
+        widgets::{DragValue, Slider},
+        ColorImage, Context, Style, TextureHandle, Visuals,
     },
     App, Frame,
 };
@@ -24,6 +25,8 @@ pub struct PBGui {
     t_proc: Duration,
     t_post: Duration,
     v_checks: [bool; 9],
+    v_mins: [f32; 9],
+    v_maxes: [f32; 9],
     vdefaults: [f32; 9],
 }
 
@@ -52,13 +55,20 @@ impl App for PBGui {
                 let mut proc = false;
                 for (n, b) in self.v_checks.iter().enumerate() {
                     if *b {
-                        let slider = Slider::new(&mut self.vdefaults[n], -1.0..=1.0)
+                        ui.horizontal(|ui| {
+                            let slider = Slider::new(
+                                &mut self.vdefaults[n],
+                                self.v_mins[n]..=self.v_maxes[n],
+                            )
                             .prefix(format!("v{}: ", n + 1))
                             .smart_aim(true)
                             .clamp_to_range(false);
-                        if ui.add(slider).drag_released() {
-                            proc = true;
-                        };
+                            ui.add(DragValue::new(&mut self.v_mins[n]));
+                            if ui.add(slider).drag_released() {
+                                proc = true;
+                            };
+                            ui.add(DragValue::new(&mut self.v_maxes[n]));
+                        });
                     }
                 }
                 if proc {
@@ -127,6 +137,8 @@ impl PBGui {
             t_parse: Duration::default(),
             t_proc: Duration::default(),
             t_post: Duration::default(),
+            v_mins: [-1.0; 9],
+            v_maxes: [1.0; 9],
             v_checks: [false; 9],
             vdefaults: [0.0; 9],
         }
