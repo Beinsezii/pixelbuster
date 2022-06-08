@@ -1,17 +1,24 @@
 #![feature(test)]
 
-use std::os::raw;
-use std::sync::Arc;
+use std::os::raw::c_char;
 
-mod pb_core;
-use pb_core::{parse_ops, process_multi, Space};
+pub mod pb_core;
+pub use pb_core::{parse_ops, process_multi, process_segment, Operation, Space};
+
+pub fn pixelbuster<S: AsRef<str>>(
+    code: S,
+    space: Space,
+    pixels: &mut [f32],
+    vdefaults: Option<[f32; 9]>,
+) {
+    process_multi(parse_ops(code, space), pixels, vdefaults);
+}
 
 #[no_mangle]
-pub extern "C" fn pixelbuster(
-    // {{{
-    code: *const raw::c_char,
-    channels: *const raw::c_char,
-    pixels: *mut raw::c_char,
+pub extern "C" fn pixelbuster_ffi(
+    code: *const c_char,
+    channels: *const c_char,
+    pixels: *mut c_char,
     len: usize,
 ) {
     let len = len / 8;
@@ -37,104 +44,5 @@ pub extern "C" fn pixelbuster(
         std::slice::from_raw_parts_mut(pixels.cast::<f32>(), len)
     };
 
-    let ops = Arc::new(parse_ops(code, Space::SRGB));
-
-    process_multi(&*ops, pixels, None);
-} // }}}
-
-#[cfg(test)]
-mod tests {
-    use crate::pixelbuster;
-    use std::ffi::CString;
-    use std::os::raw;
-
-    extern crate test;
-    use test::Bencher;
-
-    #[bench]
-    fn bench_simple(b: &mut test::bench::Bencher) {
-        let count = 4000 * 3000 * 4;
-        let mut pixels = Vec::<f32>::new();
-        pixels.reserve(count);
-        for _ in 0..count {
-            pixels.push(rand::random::<f32>())
-        }
-        b.iter(|| {
-            pixelbuster(
-                CString::new(
-                    "r + 1\n\
-                r + 1\n\
-                r + 1\n\
-                r + 1\n\
-                r + 1\n\
-                r - 5",
-                )
-                .unwrap()
-                .into_raw(),
-                CString::new("rgba").unwrap().into_raw(),
-                pixels.as_mut_ptr().cast::<raw::c_char>(),
-                count,
-            );
-        });
-    }
-
-    #[bench]
-    fn bench_complex(b: &mut test::bench::Bencher) {
-        let count = 4000 * 3000 * 4;
-        let mut pixels = Vec::<f32>::new();
-        pixels.reserve(count);
-        for _ in 0..count {
-            pixels.push(rand::random::<f32>())
-        }
-        b.iter(|| {
-            pixelbuster(
-                CString::new(
-                    "v = r\n\
-                r + pi\n\
-                r - pi\n\
-                r * 2\n\
-                r / 2\n\
-                r sqrt r\n\
-                r pow 2\n\
-                r min 100\n\
-                r max 0\n\
-                r abs r\n\
-                r log e\n\
-                r round r\n\
-                r = v",
-                )
-                .unwrap()
-                .into_raw(),
-                CString::new("rgba").unwrap().into_raw(),
-                pixels.as_mut_ptr().cast::<raw::c_char>(),
-                count,
-            );
-        });
-    }
-
-    #[bench]
-    fn bench_real(b: &mut Bencher) {
-        let count = 4000 * 3000 * 4;
-        let mut pixels = Vec::<f32>::new();
-        pixels.reserve(count);
-        for _ in 0..count {
-            pixels.push(rand::random::<f32>())
-        }
-        b.iter(|| {
-            pixelbuster(
-                CString::new(
-                    "v = 100\n\
-                v2 = l\n\
-                v2 / 1.25\n\
-                v - v2\n\
-                c * v",
-                )
-                .unwrap()
-                .into_raw(),
-                CString::new("rgba").unwrap().into_raw(),
-                pixels.as_mut_ptr().cast::<raw::c_char>(),
-                count,
-            );
-        });
-    }
+    pixelbuster(&code, Space::SRGB, pixels, None);
 }

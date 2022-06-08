@@ -299,14 +299,14 @@ pub enum Operation {
 }
 // }}}
 
-pub fn parse_ops<S: AsRef<str>>(ops: S, mut space: Space) -> Vec<Operation> {
+pub fn parse_ops<S: AsRef<str>>(code: S, mut space: Space) -> Vec<Operation> {
     // {{{
     let mut line = 0;
     let mut result = Vec::<Operation>::new();
     let mut chs = space.to_string();
     // initial Space
     result.push(Operation::Space(space));
-    for op in ops.as_ref().to_ascii_lowercase().trim().split('\n') {
+    for op in code.as_ref().to_ascii_lowercase().trim().split('\n') {
         line += 1;
         let items = op.split_ascii_whitespace().collect::<Vec<&str>>();
 

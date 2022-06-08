@@ -6,9 +6,6 @@ edition = "2021"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
-[lib]
-crate-type = ["cdylib"]
-
 [dependencies]
 num_cpus = "1"
 rand = "0.8"
@@ -18,8 +15,14 @@ eframe = {version = "0.18", optional = true}
 image = {version = "0.24", optional = true}
 
 [features]
-default = ["gui"]
 gui = ["dep:eframe", "dep:image"]
+
+[lib]
+crate-type = ["lib", "cdylib"]
+
+[[bin]]
+name = "gui"
+required-features = ["gui"]
 
 [profile.dev]
 opt-level = 1

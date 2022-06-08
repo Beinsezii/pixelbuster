@@ -1,7 +1,5 @@
 use std::env::args_os;
 
-mod pb_core;
-
 #[cfg(feature = "gui")]
 mod gui;
 
