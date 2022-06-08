@@ -6,6 +6,7 @@ use std::time::{Duration, Instant};
 use eframe::egui;
 use eframe::{
     egui::{
+        containers::ScrollArea,
         panel::{CentralPanel, SidePanel},
         ColorImage, Context, Slider, Style, TextureHandle, Visuals,
     },
@@ -30,45 +31,47 @@ impl App for PBGui {
     fn update(&mut self, ctx: &Context, _frame: &mut Frame) {
         SidePanel::right("code edit").show(ctx, |ui| {
             ui.heading("Code go here");
-            ui.code_editor(&mut self.code);
-            if ui.button("Update").clicked() {
-                self.process(ctx);
-            }
+            ScrollArea::vertical().show(ui, |ui| {
+                ui.code_editor(&mut self.code);
+                if ui.button("Update").clicked() {
+                    self.process(ctx);
+                }
 
-            ui.columns(4, |cols| {
-                for (n, c) in cols.iter_mut().enumerate() {
-                    if c.checkbox(&mut self.v_checks[n], (n + 1).to_string())
-                        .clicked()
-                        || c.checkbox(&mut self.v_checks[n + 4], (n + 5).to_string())
+                ui.columns(4, |cols| {
+                    for (n, c) in cols.iter_mut().enumerate() {
+                        if c.checkbox(&mut self.v_checks[n], (n + 1).to_string())
                             .clicked()
-                    {
-                        self.process(ctx)
+                            || c.checkbox(&mut self.v_checks[n + 4], (n + 5).to_string())
+                                .clicked()
+                        {
+                            self.process(ctx)
+                        }
+                    }
+                });
+
+                let mut proc = false;
+                for (n, b) in self.v_checks.iter().enumerate() {
+                    if *b {
+                        let slider = Slider::new(&mut self.vdefaults[n], -1.0..=1.0)
+                            .smart_aim(true)
+                            .clamp_to_range(false);
+                        if ui.add(slider).drag_released() {
+                            proc = true;
+                        };
                     }
                 }
-            });
-
-            let mut proc = false;
-            for (n, b) in self.v_checks.iter().enumerate() {
-                if *b {
-                    let slider = Slider::new(&mut self.vdefaults[n], -1.0..=1.0)
-                        .smart_aim(true)
-                        .clamp_to_range(false);
-                    if ui.add(slider).drag_released() {
-                        proc = true;
-                    };
+                if proc {
+                    self.process(ctx);
                 }
-            }
-            if proc {
-                self.process(ctx);
-            }
 
-            ui.label(format!(
-                "PRE: {:.2}ms\nPARSE: {:.2}ms\nPROC: {:.2}ms\nPOST: {:.2}ms",
-                self.t_pre.as_secs_f64() * 1000.0,
-                self.t_parse.as_secs_f64() * 1000.0,
-                self.t_proc.as_secs_f64() * 1000.0,
-                self.t_post.as_secs_f64() * 1000.0
-            ));
+                ui.label(format!(
+                    "PRE: {:.2}ms\nPARSE: {:.2}ms\nPROC: {:.2}ms\nPOST: {:.2}ms",
+                    self.t_pre.as_secs_f64() * 1000.0,
+                    self.t_parse.as_secs_f64() * 1000.0,
+                    self.t_proc.as_secs_f64() * 1000.0,
+                    self.t_post.as_secs_f64() * 1000.0
+                ));
+            });
         });
         CentralPanel::default()
             .frame(
