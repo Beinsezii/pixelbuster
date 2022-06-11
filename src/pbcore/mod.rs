@@ -4,7 +4,7 @@ use crossbeam_utils::thread::scope;
 use rand::random;
 
 pub mod parse;
-pub use parse::{parse_ops, Operation, Op, Obj};
+pub use parse::{parse_ops, Obj, Op, Operation};
 
 #[derive(Clone, Copy, PartialEq, Eq)]
 // TODO: HSV???
@@ -24,6 +24,21 @@ impl ToString for Space {
             Space::XYZ => String::from("xyza"),
             Space::LAB => String::from("lab"),
             Space::LCH => String::from("lcha"),
+        }
+    }
+}
+
+impl TryFrom<&str> for Space {
+    type Error = ();
+    fn try_from(value: &str) -> Result<Self, ()> {
+        match value.to_ascii_lowercase().as_str() {
+            "srgb" | "rgb" | "srgba" | "rgba" => Ok(Space::SRGB),
+            "lrgb" | "lrgba" => Ok(Space::LRGB),
+            "xyz" | "xyza" => Ok(Space::XYZ),
+            // TODO use alpha with LAB without using "c4"???
+            "lab" | "laba" => Ok(Space::LAB),
+            "lch" | "lcha" => Ok(Space::LCH),
+            _ => Err(()),
         }
     }
 }
@@ -245,7 +260,6 @@ impl Color {
     // set }}}
 }
 // Color }}}
-
 
 // TODO: make run-able without alpha.
 // TODO: Result<>

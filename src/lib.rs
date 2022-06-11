@@ -30,9 +30,7 @@ pub extern "C" fn pixelbuster_ffi(
             .expect("Invalid code string")
             .to_string()
     };
-    // TODO: Space::from_string()
-    // not all programs may default to SRGB.
-    let _channels = unsafe {
+    let channels = unsafe {
         assert!(!channels.is_null());
         std::ffi::CStr::from_ptr(channels)
             .to_str()
@@ -44,5 +42,10 @@ pub extern "C" fn pixelbuster_ffi(
         std::slice::from_raw_parts_mut(pixels.cast::<f32>(), len)
     };
 
-    pixelbuster(&code, Space::SRGB, pixels, None);
+    pixelbuster(
+        &code,
+        Space::try_from(channels.as_str()).unwrap_or(Space::SRGB),
+        pixels,
+        None,
+    );
 }

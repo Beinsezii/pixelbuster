@@ -142,15 +142,7 @@ fn op<S: AsRef<str>>(item: S) -> Result<Op, ()> {
 }
 
 fn spc<S: AsRef<str>>(item: S) -> Result<Space, ()> {
-    match item.as_ref() {
-        "srgb" | "rgb" | "srgba" | "rgba" => Ok(Space::SRGB),
-        "lrgb" | "lrgba" => Ok(Space::LRGB),
-        "xyz" | "xyza" => Ok(Space::XYZ),
-        // TODO use alpha with LAB without using "c4"???
-        "lab" | "laba" => Ok(Space::LAB),
-        "lch" | "lcha" => Ok(Space::LCH),
-        _ => Err(()),
-    }
+    Space::try_from(item.as_ref())
 }
 
 fn oper_space(items: &[&str], space: &mut Space, line: usize) -> Result<Operation, OpError> {
