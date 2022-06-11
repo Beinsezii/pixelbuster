@@ -10,7 +10,8 @@ pub mod color;
 pub use color::{convert_space, convert_space_alpha, Space};
 
 // TODO: make run-able without alpha.
-// TODO: Result<>
+// TODO: Result<> instead of panic
+// TODO: replase vdefaults with "external vars" like "e1, e2" etc
 pub fn process_segment<O: AsRef<[Operation]>>(
     ops: O,
     pixels: &mut [f32],
