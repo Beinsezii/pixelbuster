@@ -1,8 +1,10 @@
-//TODO: process() = parse_ops() + process_multi()
 use std::f32::consts::PI;
 
 use crossbeam_utils::thread::scope;
 use rand::random;
+
+pub mod parse;
+pub use parse::{parse_ops, Operation, Op, Obj};
 
 #[derive(Clone, Copy, PartialEq, Eq)]
 // TODO: HSV???
@@ -244,196 +246,6 @@ impl Color {
 }
 // Color }}}
 
-// structs {{{
-#[derive(Clone, Copy, PartialEq, Eq)]
-pub enum Op {
-    Add,
-    Sub,
-    Mul,
-    Div,
-    Mod,
-    Pow,
-    Set,
-    Abs,
-    Acos,
-    Acosh,
-    Asin,
-    Asinh,
-    Atan,
-    Atan2,
-    Atanh,
-    Cbrt,
-    Ceil,
-    Cos,
-    Cosh,
-    Floor,
-    Log,
-    Max,
-    Min,
-    Round,
-    Sin,
-    Sinh,
-    Sqrt,
-    Tan,
-    Tanh,
-}
-
-#[derive(Clone, Copy, PartialEq)]
-pub enum Obj {
-    Chan(usize),
-    Var(usize),
-    Num(f32),
-    E,
-    Pi,
-    Rand,
-}
-
-#[derive(Clone, Copy, PartialEq)]
-pub enum Operation {
-    Space(Space),
-    Process {
-        target: Obj,
-        operation: Op,
-        value: Obj,
-    },
-}
-// }}}
-
-pub fn parse_ops<S: AsRef<str>>(code: S, mut space: Space) -> Vec<Operation> {
-    // {{{
-    let mut line = 0;
-    let mut result = Vec::<Operation>::new();
-    let mut chs = space.to_string();
-    // initial Space
-    result.push(Operation::Space(space));
-    for op in code.as_ref().to_ascii_lowercase().trim().split('\n') {
-        line += 1;
-        let items = op.split_ascii_whitespace().collect::<Vec<&str>>();
-
-        if items.len() == 0 {
-            continue;
-        } else if items.len() == 1 {
-            result.push(Operation::Space({
-                space = match items[0] {
-                    "srgb" | "rgb" | "srgba" | "rgba" => Space::SRGB,
-                    "lrgb" | "lrgba" => Space::LRGB,
-                    "xyz" | "xyza" => Space::XYZ,
-                    // TODO use alpha with LAB without using "c4"???
-                    "lab" | "laba" => Space::LAB,
-                    "lch" | "lcha" => Space::LCH,
-                    _ => {
-                        println!("Invalid space operation on line {}", line);
-                        continue;
-                    }
-                };
-                chs = space.to_string();
-                space
-            }));
-            continue;
-        } else if items.len() != 3 {
-            println!("Invalid number of args on operation line {}", line);
-            continue;
-        }
-
-        result.push(Operation::Process {
-            target: match items[0] {
-                // don't hate I made these with a vim macro
-                "c1" => Obj::Chan(0),
-                "c2" => Obj::Chan(1),
-                "c3" => Obj::Chan(2),
-                "c4" => Obj::Chan(3),
-                "v1" | "v" => Obj::Var(0),
-                "v2" => Obj::Var(1),
-                "v3" => Obj::Var(2),
-                "v4" => Obj::Var(3),
-                "v5" => Obj::Var(4),
-                "v6" => Obj::Var(5),
-                "v7" => Obj::Var(6),
-                "v8" => Obj::Var(7),
-                "v9" => Obj::Var(8),
-                val => match chs.find(val) {
-                    Some(n) => Obj::Chan(n),
-                    None => {
-                        println!("Invalid target on operation line {}", line);
-                        continue;
-                    }
-                },
-            },
-
-            operation: match items[1] {
-                "+=" | "+" | "add" => Op::Add,
-                "-=" | "-" | "sub" => Op::Sub,
-                "*=" | "*" | "mul" => Op::Mul,
-                "/=" | "/" | "div" => Op::Div,
-                "%=" | "%" | "mod" => Op::Mod,
-                "**" | "^" | "pow" => Op::Pow,
-                "=" | "set" => Op::Set,
-                "abs" => Op::Abs,
-                "acos" => Op::Acos,
-                "acosh" => Op::Acosh,
-                "asin" => Op::Asin,
-                "asinh" => Op::Asinh,
-                "atan" => Op::Atan,
-                "atan2" => Op::Atan2,
-                "atanh" => Op::Atanh,
-                "cbrt" => Op::Cbrt,
-                "ceil" => Op::Ceil,
-                "cos" => Op::Cos,
-                "cosh" => Op::Cosh,
-                "floor" => Op::Floor,
-                "log" => Op::Log,
-                "max" => Op::Max,
-                "min" => Op::Min,
-                "round" => Op::Round,
-                "sin" => Op::Sin,
-                "sinh" => Op::Sinh,
-                "sqrt" => Op::Sqrt,
-                "tan" => Op::Tan,
-                "tanh" => Op::Tanh,
-                _ => {
-                    println!("Invalid math operator on operation line {}", line);
-                    continue;
-                }
-            },
-
-            value: match items[2] {
-                "c1" => Obj::Chan(0),
-                "c2" => Obj::Chan(1),
-                "c3" => Obj::Chan(2),
-                "c4" => Obj::Chan(3),
-                "v1" | "v" => Obj::Var(0),
-                "v2" => Obj::Var(1),
-                "v3" => Obj::Var(2),
-                "v4" => Obj::Var(3),
-                "v5" => Obj::Var(4),
-                "v6" => Obj::Var(5),
-                "v7" => Obj::Var(6),
-                "v8" => Obj::Var(7),
-                "v9" => Obj::Var(8),
-                "e" => Obj::E,
-                "pi" => Obj::Pi,
-                "rand" => Obj::Rand,
-                val => {
-                    match chs.find(val) {
-                        Some(n) => Obj::Chan(n),
-                        None => {
-                            match val.parse::<f32>() {
-                                Ok(n) => Obj::Num(n),
-                                Err(_) => {
-                                    // yeah so it's a pyramid
-                                    println!("Invalid value on operation line {}", line);
-                                    continue;
-                                }
-                            }
-                        }
-                    }
-                }
-            },
-        });
-    }
-
-    result
-} // }}}
 
 // TODO: make run-able without alpha.
 // TODO: Result<>
@@ -468,11 +280,11 @@ pub fn process_segment<O: AsRef<[Operation]>>(
         for op in ops.iter() {
             match op {
                 Operation::Process {
-                    value,
                     target,
                     operation,
+                    source,
                 } => {
-                    let val: f32 = match *value {
+                    let src: f32 = match *source {
                         Obj::Chan(i) => pixel[i],
                         Obj::Var(i) => v[i],
                         Obj::Num(n) => n,
@@ -488,35 +300,35 @@ pub fn process_segment<O: AsRef<[Operation]>>(
                     };
 
                     match operation {
-                        Op::Add => *tar += val,
-                        Op::Sub => *tar -= val,
-                        Op::Mul => *tar *= val,
-                        Op::Div => *tar /= val,
-                        Op::Mod => *tar %= val,
-                        Op::Pow => *tar = tar.powf(val),
-                        Op::Set => *tar = val,
-                        Op::Abs => *tar = val.abs(),
-                        Op::Acos => *tar = val.acos(),
-                        Op::Acosh => *tar = val.acosh(),
-                        Op::Asin => *tar = val.asin(),
-                        Op::Asinh => *tar = val.asinh(),
-                        Op::Atan => *tar = val.atan(),
-                        Op::Atan2 => *tar = tar.atan2(val),
-                        Op::Atanh => *tar = val.atanh(),
-                        Op::Cbrt => *tar = val.cbrt(),
-                        Op::Ceil => *tar = val.ceil(),
-                        Op::Cos => *tar = val.cos(),
-                        Op::Cosh => *tar = val.cosh(),
-                        Op::Floor => *tar = val.floor(),
-                        Op::Log => *tar = tar.log(val),
-                        Op::Max => *tar = tar.max(val),
-                        Op::Min => *tar = tar.min(val),
-                        Op::Round => *tar = val.round(),
-                        Op::Sin => *tar = val.sin(),
-                        Op::Sinh => *tar = val.sinh(),
-                        Op::Sqrt => *tar = val.sqrt(),
-                        Op::Tan => *tar = val.tan(),
-                        Op::Tanh => *tar = val.tanh(),
+                        Op::Add => *tar += src,
+                        Op::Sub => *tar -= src,
+                        Op::Mul => *tar *= src,
+                        Op::Div => *tar /= src,
+                        Op::Mod => *tar %= src,
+                        Op::Pow => *tar = tar.powf(src),
+                        Op::Set => *tar = src,
+                        Op::Abs => *tar = src.abs(),
+                        Op::Acos => *tar = src.acos(),
+                        Op::Acosh => *tar = src.acosh(),
+                        Op::Asin => *tar = src.asin(),
+                        Op::Asinh => *tar = src.asinh(),
+                        Op::Atan => *tar = src.atan(),
+                        Op::Atan2 => *tar = tar.atan2(src),
+                        Op::Atanh => *tar = src.atanh(),
+                        Op::Cbrt => *tar = src.cbrt(),
+                        Op::Ceil => *tar = src.ceil(),
+                        Op::Cos => *tar = src.cos(),
+                        Op::Cosh => *tar = src.cosh(),
+                        Op::Floor => *tar = src.floor(),
+                        Op::Log => *tar = tar.log(src),
+                        Op::Max => *tar = tar.max(src),
+                        Op::Min => *tar = tar.min(src),
+                        Op::Round => *tar = src.round(),
+                        Op::Sin => *tar = src.sin(),
+                        Op::Sinh => *tar = src.sinh(),
+                        Op::Sqrt => *tar = src.sqrt(),
+                        Op::Tan => *tar = src.tan(),
+                        Op::Tanh => *tar = src.tanh(),
                     };
                 }
                 Operation::Space(new_space) => {
