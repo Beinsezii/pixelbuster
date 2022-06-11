@@ -71,6 +71,16 @@ pub fn convert_space(from: Space, to: Space, pixel: &mut [f32; 3]) {
     }
 }
 
+pub fn convert_space_alpha(from: Space, to: Space, pixel: &mut [f32; 4]) {
+    unsafe {
+        convert_space(
+            from,
+            to,
+            pixel.get_unchecked_mut(0..3).try_into().unwrap_unchecked(),
+        )
+    }
+}
+
 // UP {{{
 
 /// Return Integer sRGB

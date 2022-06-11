@@ -1,4 +1,5 @@
 #![feature(test)]
+#![feature(array_chunks)]
 
 use std::os::raw::c_char;
 

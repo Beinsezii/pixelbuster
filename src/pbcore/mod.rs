@@ -7,7 +7,7 @@ pub mod parse;
 pub use parse::{parse_ops, Obj, Op, Operation};
 
 pub mod color;
-pub use color::{convert_space, Space};
+pub use color::{convert_space, convert_space_alpha, Space};
 
 // TODO: make run-able without alpha.
 // TODO: Result<>
@@ -34,7 +34,7 @@ pub fn process_segment<O: AsRef<[Operation]>>(
     let vdefaults = vdefaults.unwrap_or([0.0_f32; 9]);
 
     // TODO: std's new packed_simd
-    for pixel in pixels.chunks_mut(4) {
+    for pixel in pixels.array_chunks_mut::<4>() {
         // reset space transforms for each pixel
         space = orig_space;
         // reset vars each iter
@@ -94,26 +94,14 @@ pub fn process_segment<O: AsRef<[Operation]>>(
                     };
                 }
                 Operation::Space(new_space) => {
-                    unsafe {
-                        convert_space(
-                            *space,
-                            *new_space,
-                            pixel.get_unchecked_mut(0..3).try_into().unwrap(),
-                        )
-                    };
+                    convert_space_alpha(*space, *new_space, pixel);
                     space = new_space;
                 }
             }
         }
         // restore to original if not already
         if space != orig_space {
-            unsafe {
-                convert_space(
-                    *space,
-                    *orig_space,
-                    pixel.get_unchecked_mut(0..3).try_into().unwrap(),
-                )
-            };
+            convert_space_alpha(*space, *orig_space, pixel)
         }
     }
 } // }}}
