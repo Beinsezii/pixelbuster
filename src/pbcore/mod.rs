@@ -94,19 +94,26 @@ pub fn process_segment<O: AsRef<[Operation]>>(
                     };
                 }
                 Operation::Space(new_space) => {
-                    if space == new_space {
-                        continue;
-                    }
-
-                    convert_space(*space, *new_space, &mut pixel[0..3].try_into().unwrap());
-
+                    unsafe {
+                        convert_space(
+                            *space,
+                            *new_space,
+                            pixel.get_unchecked_mut(0..3).try_into().unwrap(),
+                        )
+                    };
                     space = new_space;
                 }
             }
         }
         // restore to original if not already
-        if orig_space != space {
-            convert_space(*space, *orig_space, &mut pixel[0..3].try_into().unwrap());
+        if space != orig_space {
+            unsafe {
+                convert_space(
+                    *space,
+                    *orig_space,
+                    pixel.get_unchecked_mut(0..3).try_into().unwrap(),
+                )
+            };
         }
     }
 } // }}}
