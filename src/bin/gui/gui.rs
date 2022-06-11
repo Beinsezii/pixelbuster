@@ -19,6 +19,7 @@ use image::{io::Reader, DynamicImage};
 pub struct PBGui {
     code: String,
     data: Option<(DynamicImage, TextureHandle)>,
+    preview: bool,
     t_pre: Duration,
     t_parse: Duration,
     t_proc: Duration,
@@ -35,9 +36,18 @@ impl App for PBGui {
             ui.heading("Code go here");
             ScrollArea::vertical().show(ui, |ui| {
                 ui.code_editor(&mut self.code);
-                if ui.button("Update").clicked() {
-                    self.process(ctx);
-                }
+                ui.horizontal(|ui| {
+                    if ui.button("Update").clicked() {
+                        self.process(ctx);
+                    }
+
+                    if ui
+                        .checkbox(&mut self.preview, "Preview".to_string())
+                        .clicked()
+                    {
+                        self.process(ctx);
+                    }
+                });
 
                 ui.columns(4, |cols| {
                     for (n, c) in cols.iter_mut().enumerate() {
@@ -126,6 +136,7 @@ impl PBGui {
         let mut result = Self {
             code: String::new(),
             data: None,
+            preview: true,
             t_pre: Duration::default(),
             t_parse: Duration::default(),
             t_proc: Duration::default(),
@@ -169,49 +180,59 @@ impl PBGui {
     // TODO: Half/Quarter res preview.
     fn process(&mut self, ctx: &Context) {
         if let Some((img, tex)) = self.data.as_mut() {
-            // fetch data
-            let i_pre = Instant::now();
-            let mut pixels = img.to_rgba32f();
-            let mut vdefaults = self.vdefaults;
-            self.v_checks.iter().enumerate().for_each(|(n, v)| {
-                if !v {
-                    vdefaults[n] = 0.0
+            if self.preview {
+                // fetch data
+                let i_pre = Instant::now();
+                let mut pixels = img.to_rgba32f();
+                let mut vdefaults = self.vdefaults;
+                self.v_checks.iter().enumerate().for_each(|(n, v)| {
+                    if !v {
+                        vdefaults[n] = 0.0
+                    }
+                });
+                self.t_pre = Instant::now() - i_pre;
+
+                // parse into ops
+                let i_parse = Instant::now();
+
+                let ops = parse_ops(&self.code, Space::SRGB);
+
+                self.t_parse = Instant::now() - i_parse;
+
+                for er in ops.1 {
+                    println!("{}", er);
                 }
-            });
-            self.t_pre = Instant::now() - i_pre;
+                // actually process
+                let i_proc = Instant::now();
 
-            // parse into ops
-            let i_parse = Instant::now();
+                process_multi(&ops.0, &mut pixels, Some(vdefaults));
 
-            let ops = parse_ops(&self.code, Space::SRGB);
+                self.t_proc = Instant::now() - i_proc;
 
-            self.t_parse = Instant::now() - i_parse;
+                // post process aka convert into texture readable data
+                let i_post = Instant::now();
+                let pixels = pixels
+                    .into_iter()
+                    .map(|p| (p * 255.0) as u8)
+                    .collect::<Vec<u8>>();
+                self.t_post = Instant::now() - i_post;
 
-            for er in ops.1 {
-                println!("{}", er);
+                *tex = ctx.load_texture(
+                    "img",
+                    ColorImage::from_rgba_unmultiplied(
+                        [img.width() as usize, img.height() as usize],
+                        pixels.as_ref(),
+                    ),
+                );
+            } else {
+                *tex = ctx.load_texture(
+                    "img",
+                    ColorImage::from_rgba_unmultiplied(
+                        [img.width() as usize, img.height() as usize],
+                        img.to_rgba8().as_ref(),
+                    ),
+                )
             }
-            // actually process
-            let i_proc = Instant::now();
-
-            process_multi(&ops.0, &mut pixels, Some(vdefaults));
-
-            self.t_proc = Instant::now() - i_proc;
-
-            // post process aka convert into texture readable data
-            let i_post = Instant::now();
-            let pixels = pixels
-                .into_iter()
-                .map(|p| (p * 255.0) as u8)
-                .collect::<Vec<u8>>();
-            self.t_post = Instant::now() - i_post;
-
-            *tex = ctx.load_texture(
-                "img",
-                ColorImage::from_rgba_unmultiplied(
-                    [img.width() as usize, img.height() as usize],
-                    pixels.as_ref(),
-                ),
-            );
         }
     }
 }
