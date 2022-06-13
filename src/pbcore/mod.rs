@@ -120,11 +120,10 @@ pub fn process<O: AsRef<[Operation]>>(ops: O, pixels: &mut [f32], externals: Opt
             let mut threads = Vec::new();
 
             let count: usize = num_cpus::get();
-            let mut chunks: Vec<&mut [f32]> =
+            let chunks: Vec<&mut [f32]> =
                 pixels.chunks_mut((pixels.len() / 4) / count * 4).collect();
 
-            for _ in 0..chunks.len() {
-                let chunk: &mut [f32] = chunks.pop().unwrap();
+            for chunk in chunks.into_iter() {
                 let op = ops.clone();
                 threads.push(s.spawn(move |_| process_segment(&op, chunk, externals)));
             }
