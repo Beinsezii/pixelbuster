@@ -1,6 +1,7 @@
 use std::f32::consts::{E, PI};
 
 use crossbeam_utils::thread::scope;
+use num_cpus;
 use rand::random;
 
 pub mod parse;
