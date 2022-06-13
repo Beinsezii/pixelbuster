@@ -1,8 +1,8 @@
 use std::f32::consts::{E, PI};
 
 use crossbeam_utils::thread::scope;
+use fastrand;
 use num_cpus;
-use rand::random;
 
 pub mod parse;
 pub use parse::{parse_ops, Obj, Op, Operation};
@@ -55,7 +55,7 @@ fn process_segment<O: AsRef<[Operation]>>(ops: O, pixels: &mut [f32], externals:
                         Obj::Num(n) => n,
                         Obj::E => E,
                         Obj::Pi => PI,
-                        Obj::Rand => random::<f32>(),
+                        Obj::Rand => fastrand::f32(),
                     };
 
                     let tar: &mut f32 = match *target {

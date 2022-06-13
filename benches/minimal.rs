@@ -6,11 +6,13 @@ use test::Bencher;
 
 use pixelbuster::pbcore::{parse_ops, process, Space};
 
+use fastrand;
+
 const COUNT: usize = 1920000;
 const OPS: &str = "r = r";
 
 fn gen_px() -> Vec<f32> {
-    (0..COUNT).map(|_| rand::random::<f32>()).collect()
+    (0..COUNT).map(|_| fastrand::f32()).collect()
 }
 
 #[bench]
