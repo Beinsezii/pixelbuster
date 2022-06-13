@@ -11,11 +11,11 @@ pub use color::{convert_space, convert_space_alpha, Space};
 
 // TODO: make run-able without alpha.
 // TODO: Result<> instead of panic
-// TODO: replase vdefaults with "external vars" like "e1, e2" etc
+// TODO: replase externals with "external vars" like "e1, e2" etc
 pub fn process_segment<O: AsRef<[Operation]>>(
     ops: O,
     pixels: &mut [f32],
-    vdefaults: Option<[f32; 9]>,
+    externals: Option<[f32; 9]>,
 ) {
     // {{{
     assert!(pixels.len() % 4 == 0);
@@ -32,14 +32,18 @@ pub fn process_segment<O: AsRef<[Operation]>>(
     };
 
     let orig_space = space;
-    let vdefaults = vdefaults.unwrap_or([0.0_f32; 9]);
+    let e = externals.unwrap_or([0.0_f32; 9]);
+    let defaults: [f32; 18] = [
+        0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, e[0], e[1], e[2], e[3], e[4], e[5], e[6],
+        e[7], e[8],
+    ];
 
     // TODO: std's new packed_simd
     for pixel in pixels.array_chunks_mut::<4>() {
         // reset space transforms for each pixel
         space = orig_space;
         // reset vars each iter
-        let mut v = vdefaults;
+        let mut v: [f32; 18] = defaults;
         for op in ops.iter() {
             match op {
                 Operation::Process {
@@ -110,14 +114,14 @@ pub fn process_segment<O: AsRef<[Operation]>>(
 pub fn process_multi<O: AsRef<[Operation]>>(
     ops: O,
     pixels: &mut [f32],
-    vdefaults: Option<[f32; 9]>,
+    externals: Option<[f32; 9]>,
 ) {
     let ops: &[Operation] = ops.as_ref();
 
     if pixels.len() < 400 {
         // < 10x10 grid always single thread.
         // dumb way to make sure it splits well + overhead avoidance.
-        process_segment(ops, pixels, vdefaults)
+        process_segment(ops, pixels, externals)
     } else {
         scope(|s| {
             let mut threads = Vec::new();
@@ -129,7 +133,7 @@ pub fn process_multi<O: AsRef<[Operation]>>(
             for _ in 0..chunks.len() {
                 let chunk: &mut [f32] = chunks.pop().unwrap();
                 let op = ops.clone();
-                threads.push(s.spawn(move |_| process_segment(&op, chunk, vdefaults)));
+                threads.push(s.spawn(move |_| process_segment(&op, chunk, externals)));
             }
 
             for t in threads {

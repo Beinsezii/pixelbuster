@@ -27,7 +27,7 @@ pub struct PBGui {
     v_checks: [bool; 9],
     v_mins: [f32; 9],
     v_maxes: [f32; 9],
-    vdefaults: [f32; 9],
+    externals: [f32; 9],
 }
 
 impl App for PBGui {
@@ -66,7 +66,7 @@ impl App for PBGui {
                     if *b {
                         ui.horizontal(|ui| {
                             let slider = Slider::new(
-                                &mut self.vdefaults[n],
+                                &mut self.externals[n],
                                 self.v_mins[n]..=self.v_maxes[n],
                             )
                             .prefix(format!("v{}: ", n + 1))
@@ -144,7 +144,7 @@ impl PBGui {
             v_mins: [-1.0; 9],
             v_maxes: [1.0; 9],
             v_checks: [false; 9],
-            vdefaults: [0.0; 9],
+            externals: [0.0; 9],
         };
 
         if let Some(p) = path {
@@ -184,10 +184,10 @@ impl PBGui {
                 // fetch data
                 let i_pre = Instant::now();
                 let mut pixels = img.to_rgba32f();
-                let mut vdefaults = self.vdefaults;
+                let mut externals = self.externals;
                 self.v_checks.iter().enumerate().for_each(|(n, v)| {
                     if !v {
-                        vdefaults[n] = 0.0
+                        externals[n] = 0.0
                     }
                 });
                 self.t_pre = Instant::now() - i_pre;
@@ -205,7 +205,7 @@ impl PBGui {
                 // actually process
                 let i_proc = Instant::now();
 
-                process_multi(&ops.0, &mut pixels, Some(vdefaults));
+                process_multi(&ops.0, &mut pixels, Some(externals));
 
                 self.t_proc = Instant::now() - i_proc;
 
