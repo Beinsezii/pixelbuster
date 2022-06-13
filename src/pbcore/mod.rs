@@ -1,6 +1,6 @@
 use std::f32::consts::{E, PI};
 
-use crossbeam_utils::thread::scope;
+use easy_parallel::Parallel;
 use fastrand;
 use num_cpus;
 
@@ -117,22 +117,11 @@ pub fn process<O: AsRef<[Operation]>>(ops: O, pixels: &mut [f32], externals: Opt
         // dumb way to make sure it splits well + overhead avoidance.
         process_segment(ops, pixels, externals)
     } else {
-        scope(|s| {
-            let mut threads = Vec::new();
-
-            let count: usize = num_cpus::get();
-            let chunks: Vec<&mut [f32]> =
-                pixels.chunks_mut((pixels.len() / 4) / count * 4).collect();
-
-            for chunk in chunks.into_iter() {
-                let op = ops.clone();
-                threads.push(s.spawn(move |_| process_segment(&op, chunk, externals)));
-            }
-
-            for t in threads {
-                t.join().expect("Thread fail");
-            }
-        })
-        .unwrap();
+        let count: usize = num_cpus::get();
+        Parallel::new()
+            .each(pixels.chunks_mut((pixels.len() / 4) / count * 4), |chunk| {
+                process_segment(ops, chunk, externals);
+            })
+            .run();
     }
 }

@@ -7,9 +7,9 @@ edition = "2021"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-num_cpus = "1"
+easy-parallel = "3"
 fastrand = "1"
-crossbeam-utils = "0.8"
+num_cpus = "1"
 
 eframe = {version = "0.18", optional = true}
 image = {version = "0.24", optional = true}
