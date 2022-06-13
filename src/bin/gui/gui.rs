@@ -1,4 +1,4 @@
-use pixelbuster::pbcore::{parse_ops, process_multi, Space};
+use pixelbuster::pbcore::{parse_ops, process, Space};
 
 use std::path::Path;
 use std::time::{Duration, Instant};
@@ -205,7 +205,7 @@ impl PBGui {
                 // actually process
                 let i_proc = Instant::now();
 
-                process_multi(&ops.0, &mut pixels, Some(externals));
+                process(&ops.0, &mut pixels, Some(externals));
 
                 self.t_proc = Instant::now() - i_proc;
 

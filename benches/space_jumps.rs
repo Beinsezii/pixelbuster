@@ -4,7 +4,7 @@ extern crate test;
 
 use test::Bencher;
 
-use pixelbuster::pbcore::{parse_ops, process_multi, process_segment, Space};
+use pixelbuster::pbcore::{parse_ops, process, Space};
 
 const COUNT: usize = 1920000;
 const OPS: &str = " SRGB 
@@ -31,12 +31,6 @@ fn space_jumps_parse(b: &mut Bencher) {
 fn space_jumps_process(b: &mut Bencher) {
     let mut pixels = gen_px();
     let ops = parse_ops(OPS, Space::SRGB);
-    b.iter(|| process_multi(&ops.0, &mut pixels, None));
-}
-#[bench]
-fn space_jumps_single(b: &mut Bencher) {
-    let mut pixels = gen_px();
-    let ops = parse_ops(OPS, Space::SRGB);
-    b.iter(|| process_segment(&ops.0, &mut pixels, None));
+    b.iter(|| process(&ops.0, &mut pixels, None));
 }
 

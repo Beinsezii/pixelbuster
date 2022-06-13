@@ -4,15 +4,15 @@
 use std::os::raw::c_char;
 
 pub mod pbcore;
-pub use pbcore::{parse_ops, process_multi, process_segment, Operation, Space};
+pub use pbcore::{parse_ops, process, Operation, Space};
 
 pub fn pixelbuster<S: AsRef<str>>(
     code: S,
     space: Space,
     pixels: &mut [f32],
-    vdefaults: Option<[f32; 9]>,
+    externals: Option<[f32; 9]>,
 ) {
-    process_multi(parse_ops(code, space).0, pixels, vdefaults);
+    process(parse_ops(code, space).0, pixels, externals);
 }
 
 #[no_mangle]
