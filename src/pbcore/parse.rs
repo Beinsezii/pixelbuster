@@ -42,6 +42,12 @@ pub enum Obj {
     E,
     Pi,
     Rand,
+    Row,
+    Col,
+    Width,
+    Height,
+    XNorm,
+    YNorm,
 }
 
 #[derive(Clone, Copy, PartialEq)]
@@ -108,6 +114,12 @@ fn src<S: AsRef<str>>(item: S, space: Space) -> Result<Obj, ()> {
         "e" => Ok(Obj::E),
         "pi" => Ok(Obj::Pi),
         "rand" => Ok(Obj::Rand),
+        "row" => Ok(Obj::Row),
+        "col" => Ok(Obj::Col),
+        "width" => Ok(Obj::Width),
+        "height" => Ok(Obj::Height),
+        "xnorm" => Ok(Obj::XNorm),
+        "ynorm" => Ok(Obj::YNorm),
         val => match val.parse::<f32>() {
             Ok(f) => Ok(Obj::Num(f)),
             Err(_) => tar(val, space),
@@ -212,6 +224,9 @@ pub fn parse_ops<S: AsRef<str>>(code: S, mut space: Space) -> (Vec<Operation>, V
     for row in code.as_ref().to_ascii_lowercase().trim().split('\n') {
         line += 1;
         let items = row.split_ascii_whitespace().collect::<Vec<&str>>();
+        if items.is_empty() {
+            continue;
+        }
         let mut results = fns
             .iter()
             .map(|f| f(&items, &mut space, line))

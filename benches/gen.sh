@@ -37,7 +37,7 @@ fn '$1'_parse(b: &mut Bencher) {
 fn '$1'_process(b: &mut Bencher) {
     let mut pixels = gen_px();
     let ops = parse_ops(OPS, Space::SRGB);
-    b.iter(|| process(&ops.0, &mut pixels, None));
+    b.iter(|| process(&ops.0, &mut pixels, 0, None));
 }
 ' > "$DIR/${1}.rs"
 }

@@ -10,9 +10,10 @@ pub fn pixelbuster<S: AsRef<str>>(
     code: S,
     space: Space,
     pixels: &mut [f32],
+    width: usize,
     externals: Option<[f32; 9]>,
 ) {
-    process(parse_ops(code, space).0, pixels, externals);
+    process(parse_ops(code, space).0, pixels, width, externals);
 }
 
 #[no_mangle]
@@ -47,6 +48,7 @@ pub extern "C" fn pixelbuster_ffi(
         &code,
         Space::try_from(channels.as_str()).unwrap_or(Space::SRGB),
         pixels,
+        0,
         None,
     );
 }

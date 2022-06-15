@@ -54,6 +54,6 @@ fn sweep_parse(b: &mut Bencher) {
 fn sweep_process(b: &mut Bencher) {
     let mut pixels = gen_px();
     let ops = parse_ops(OPS, Space::SRGB);
-    b.iter(|| process(&ops.0, &mut pixels, None));
+    b.iter(|| process(&ops.0, &mut pixels, 0, None));
 }
 

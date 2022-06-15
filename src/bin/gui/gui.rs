@@ -184,6 +184,7 @@ impl PBGui {
                 // fetch data
                 let i_pre = Instant::now();
                 let mut pixels = img.to_rgba32f();
+                let width = img.width() as usize;
                 let mut externals = self.externals;
                 self.v_checks.iter().enumerate().for_each(|(n, v)| {
                     if !v {
@@ -205,7 +206,7 @@ impl PBGui {
                 // actually process
                 let i_proc = Instant::now();
 
-                process(&ops.0, &mut pixels, Some(externals));
+                process(&ops.0, &mut pixels, width, Some(externals));
 
                 self.t_proc = Instant::now() - i_proc;
 

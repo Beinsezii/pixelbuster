@@ -12,7 +12,15 @@ pub use color::{convert_space, convert_space_alpha, Space};
 
 // TODO: make run-able without alpha.
 // TODO: Result<> instead of panic
-fn process_segment<O: AsRef<[Operation]>>(ops: O, pixels: &mut [f32], externals: Option<[f32; 9]>) {
+fn process_segment<O: AsRef<[Operation]>>(
+    ops: O,
+    pixels: &mut [f32],
+    x: usize,
+    y: usize,
+    width: usize,
+    height: usize,
+    externals: Option<[f32; 9]>,
+) {
     // {{{
     assert!(pixels.len() % 4 == 0);
 
@@ -37,7 +45,7 @@ fn process_segment<O: AsRef<[Operation]>>(ops: O, pixels: &mut [f32], externals:
     };
 
     // TODO: std's new packed_simd
-    for pixel in pixels.array_chunks_mut::<4>() {
+    for (n, pixel) in pixels.array_chunks_mut::<4>().enumerate() {
         // reset space transforms for each pixel
         space = orig_space;
         // reset vars each iter
@@ -56,6 +64,12 @@ fn process_segment<O: AsRef<[Operation]>>(ops: O, pixels: &mut [f32], externals:
                         Obj::E => E,
                         Obj::Pi => PI,
                         Obj::Rand => fastrand::f32(),
+                        Obj::Col => ((n + x + y * width) % width) as f32,
+                        Obj::Row => ((n + x + y * width) / width) as f32,
+                        Obj::Width => width as f32,
+                        Obj::Height => height as f32,
+                        Obj::XNorm => (((n + x + y * width) % width) as f32) / width as f32,
+                        Obj::YNorm => (((n + x + y * width) / width) as f32) / height as f32,
                     };
 
                     let tar: &mut f32 = match *target {
@@ -109,18 +123,37 @@ fn process_segment<O: AsRef<[Operation]>>(ops: O, pixels: &mut [f32], externals:
     }
 } // }}}
 
-pub fn process<O: AsRef<[Operation]>>(ops: O, pixels: &mut [f32], externals: Option<[f32; 9]>) {
+pub fn process<O: AsRef<[Operation]>>(
+    ops: O,
+    pixels: &mut [f32],
+    mut width: usize,
+    externals: Option<[f32; 9]>,
+) {
     let ops: &[Operation] = ops.as_ref();
+    let height = if width == 0 {
+        width = usize::MAX;
+        usize::MAX
+    } else {
+        pixels.len() / 4 / width
+    };
 
     if pixels.len() < 400 {
         // < 10x10 grid always single thread.
         // dumb way to make sure it splits well + overhead avoidance.
-        process_segment(ops, pixels, externals)
+        process_segment(ops, pixels, 0, 0, width, height, externals)
     } else {
-        let count: usize = num_cpus::get();
+        let chunk_size: usize = pixels.len() / 4 / num_cpus::get() * 4;
         Parallel::new()
-            .each(pixels.chunks_mut((pixels.len() / 4) / count * 4), |chunk| {
-                process_segment(ops, chunk, externals);
+            .each(pixels.chunks_mut(chunk_size).enumerate(), |(n, chunk)| {
+                process_segment(
+                    ops,
+                    chunk,
+                    (chunk_size / 4 * n) % width,
+                    (chunk_size / 4 * n) / width,
+                    width,
+                    height,
+                    externals,
+                );
             })
             .run();
     }
