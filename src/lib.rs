@@ -21,9 +21,10 @@ pub extern "C" fn pixelbuster_ffi(
     code: *const c_char,
     channels: *const c_char,
     pixels: *mut c_char,
+    width: usize,
     len: usize,
 ) {
-    let len = len / 8;
+    let len = len / 4;
 
     let code = unsafe {
         assert!(!code.is_null());
@@ -48,7 +49,7 @@ pub extern "C" fn pixelbuster_ffi(
         &code,
         Space::try_from(channels.as_str()).unwrap_or(Space::SRGB),
         pixels,
-        0,
+        width,
         None,
     );
 }

@@ -25,7 +25,7 @@ impl ToString for Space {
 impl TryFrom<&str> for Space {
     type Error = ();
     fn try_from(value: &str) -> Result<Self, ()> {
-        match value.to_ascii_lowercase().as_str() {
+        match value.to_ascii_lowercase().trim() {
             "srgb" | "rgb" | "srgba" | "rgba" => Ok(Space::SRGB),
             "lrgb" | "lrgba" => Ok(Space::LRGB),
             "xyz" | "xyza" => Ok(Space::XYZ),
