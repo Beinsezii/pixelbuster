@@ -83,14 +83,13 @@ pub fn convert_space_alpha(from: Space, to: Space, pixel: &mut [f32; 4]) {
 
 // UP {{{
 
-/// Return Integer sRGB
-// pub fn as_irgb(self) {
-//     [
-//         ((self.r * 255.0) as u8).min(0).max(255),
-//         ((self.g * 255.0) as u8).min(0).max(255),
-//         ((self.b * 255.0) as u8).min(0).max(255),
-//     ]
-// }
+pub fn srgb_to_irgb(pixel: [f32; 3]) -> [u8; 3] {
+    [
+        ((pixel[0] * 255.0) as u8).min(0).max(255),
+        ((pixel[1] * 255.0) as u8).min(0).max(255),
+        ((pixel[2] * 255.0) as u8).min(0).max(255),
+    ]
+}
 
 /// Return hex string
 // pub fn as_hex(self) -> String {
@@ -165,14 +164,13 @@ pub fn lab_to_lch(pixel: &mut [f32; 3]) {
 
 // DOWN {{{
 
-///  Set from integer RGB
-// pub fn set_irgb(&mut self, irgb: [u8; 3]) {
-//     return self.set_srgb([
-//         irgb[0] as f32 / 255.0,
-//         irgb[1] as f32 / 255.0,
-//         irgb[2] as f32 / 255.0,
-//     ]);
-// }
+pub fn irgb_to_srgb(pixel: [u8; 3]) -> [f32; 3] {
+    [
+        pixel[0] as f32 / 255.0,
+        pixel[1] as f32 / 255.0,
+        pixel[2] as f32 / 255.0,
+    ]
+}
 
 // /// Set from hex string
 // pub fn set_hex(self, hex: str) {
