@@ -1,4 +1,4 @@
-use pixelbuster::pbcore::{parse_ops, process, Space};
+use pixelbuster::pbcore::{parse_ops, process, OpError, Space};
 
 use std::path::Path;
 use std::time::{Duration, Instant};
@@ -8,8 +8,9 @@ use eframe::{
     egui::{
         containers::ScrollArea,
         panel::{CentralPanel, SidePanel},
-        widgets::{DragValue, Slider},
-        ColorImage, Context, Style, TextureHandle, Visuals,
+        text::LayoutJob,
+        widgets::{DragValue, Slider, TextEdit},
+        Color32, ColorImage, Context, Stroke, Style, TextFormat, TextureHandle, Visuals,
     },
     App, Frame,
 };
@@ -18,6 +19,7 @@ use image::{io::Reader, DynamicImage};
 
 pub struct PBGui {
     code: String,
+    code_errs: Vec<usize>,
     data: Option<(DynamicImage, TextureHandle)>,
     preview: bool,
     t_pre: Duration,
@@ -32,10 +34,46 @@ pub struct PBGui {
 
 impl App for PBGui {
     fn update(&mut self, ctx: &Context, _frame: &mut Frame) {
-        SidePanel::right("code edit").show(ctx, |ui| {
+        SidePanel::right("toolbox").show(ctx, |ui| {
             ui.heading("Code go here");
             ScrollArea::vertical().show(ui, |ui| {
-                ui.code_editor(&mut self.code);
+                let mut highlighter = |ui: &egui::Ui, text: &str, width: f32| {
+                    let mut job = LayoutJob::default();
+                    let mut iter = text.split('\n').enumerate();
+                    let mut cur = iter.next();
+                    let mut nex = iter.next();
+                    loop {
+                        let (n, row) = if let Some(v) = cur { v } else { break };
+                        let mut row = row.to_string();
+                        if nex.is_some() {
+                            row.push('\n')
+                        }
+                        job.append(
+                            row.as_str(),
+                            0.0,
+                            TextFormat {
+                                underline: if self.code_errs.contains(&(n + 1)) {
+                                    Stroke {
+                                        width: 1.0,
+                                        color: Color32::RED,
+                                    }
+                                } else {
+                                    Stroke::default()
+                                },
+                                ..Default::default()
+                            },
+                        );
+                        cur = nex;
+                        nex = iter.next();
+                    }
+                    job.wrap.max_width = width;
+                    ui.fonts().layout_job(job)
+                };
+                ui.add(
+                    TextEdit::multiline(&mut self.code)
+                        .code_editor()
+                        .layouter(&mut highlighter),
+                );
                 ui.horizontal(|ui| {
                     if ui.button("Update").clicked() {
                         self.process(ctx);
@@ -135,6 +173,7 @@ impl PBGui {
 
         let mut result = Self {
             code: String::new(),
+            code_errs: Vec::new(),
             data: None,
             preview: true,
             t_pre: Duration::default(),
@@ -200,9 +239,17 @@ impl PBGui {
 
                 self.t_parse = Instant::now() - i_parse;
 
-                for er in ops.1 {
+                for er in ops.1.iter() {
                     println!("{}", er);
                 }
+                self.code_errs = ops
+                    .1
+                    .into_iter()
+                    .map(|oe| match oe {
+                        OpError::Partial { line, .. } => line,
+                        OpError::Unknown { line } => line,
+                    })
+                    .collect();
                 // actually process
                 let i_proc = Instant::now();
 

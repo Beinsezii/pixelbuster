@@ -5,7 +5,7 @@ use fastrand;
 use num_cpus;
 
 pub mod parse;
-pub use parse::{parse_ops, Obj, Op, Operation};
+pub use parse::{parse_ops, Obj, Op, Operation, OpError};
 
 pub mod color;
 pub use color::{convert_space, convert_space_alpha, Space};
