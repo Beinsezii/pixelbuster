@@ -126,10 +126,8 @@ pub fn srgb_to_hsv(pixel: &mut [f32; 3]) {
             db - dg
         } else if pixel[1] == vmax {
             (1.0 / 3.0) + dr - db
-        } else if pixel[2] == vmax {
-            (2.0 / 3.0) + dg - dr
         } else {
-            panic!("wut");
+            (2.0 / 3.0) + dg - dr
         };
 
         if h < 0.0 {
