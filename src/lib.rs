@@ -6,6 +6,61 @@ use std::os::raw::c_char;
 pub mod pbcore;
 pub use pbcore::{parse_ops, process, Operation, Space};
 
+pub const HELP: &str = "\
+Valid lines:
+    {target} {operation} {source}
+    {space}
+
+Quick Example:
+    r ** 2
+    g / b
+    lch
+    h sqrt h
+
+Target:
+    Where to write the operation result to.
+
+    * Channel (channel letters like 'r' 'g' 'b' 'a', or c1 ... c4),
+    * Variable (v1, v2...v9) or (e1, e2...9)
+
+Source:
+    Where to source operation data from
+
+    * any valid Target
+    * any constant numeric value, eg '3.14'
+    * 'pi'
+    * 'e'
+    * 'rand' - random val between 0.0 -> 1.0
+    * 'col' - pixel X
+    * 'row' - pixel Y
+    * 'width' - width of image
+    * 'height' - height of image
+    * 'xnorm' - pixel X on scale of 0.0 -> 1.0
+    * 'ynorm' - pixel Y on scale of 0.0 -> 1.0
+
+Operation:
+    Operations that take 2 values will source from target and source in order
+    Eg: 'r log 2' translates to 'r = r.log(2)'
+
+    * '+=' or '+' or 'add' => Add
+    * '-=' or '-' or 'sub' => Sub
+    * '*=' or '*' or 'mul' => Mul
+    * '/=' or '/' or 'div' => Div
+    * '%=' or '%' or 'mod' => Mod
+    * '**' or '^' or 'pow' => Pow
+    * '=' or 'set' => Set
+
+    * abs acos acosh asin asinh atan atan2 atanh cbrt ceil
+    * cos cosh floor log max min round sin sinh sqrt tan tanh
+
+Notes:
+    v1 through v9 start at 0.0 every pixel
+
+    e1 through e9 are 'external variables' that can be assigned starting values
+    Useful for creating things like UI control sliders
+    If not defined, will be 0.0 every pixel like a normal var
+";
+
 pub fn pixelbuster<S: AsRef<str>>(
     code: S,
     space: Space,
@@ -20,7 +75,7 @@ pub fn pixelbuster<S: AsRef<str>>(
 pub extern "C" fn pixelbuster_ffi(
     code: *const c_char,
     channels: *const c_char,
-    pixels: *mut c_char,
+    pixels: *mut u8,
     width: usize,
     len: usize,
 ) {
@@ -52,4 +107,9 @@ pub extern "C" fn pixelbuster_ffi(
         width,
         None,
     );
+}
+
+#[no_mangle]
+pub extern "C" fn pb_help_ffi() -> *mut c_char {
+    std::ffi::CString::new(HELP).unwrap().into_raw()
 }
