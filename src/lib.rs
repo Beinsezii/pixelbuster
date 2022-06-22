@@ -58,8 +58,7 @@ Notes:
 
     e1 through e9 are 'external variables' that can be assigned starting values
     Useful for creating things like UI control sliders
-    If not defined, will be 0.0 every pixel like a normal var
-";
+    If not defined, will be 0.0 every pixel like a normal var";
 
 pub fn pixelbuster<S: AsRef<str>>(
     code: S,
