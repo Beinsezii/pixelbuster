@@ -84,7 +84,7 @@ fn tar<S: AsRef<str>>(item: S, space: Space) -> Result<Obj, ()> {
         "c2" => Ok(Obj::Chan(1)),
         "c3" => Ok(Obj::Chan(2)),
         "c4" => Ok(Obj::Chan(3)),
-        "v1" | "v" => Ok(Obj::Var(0)),
+        "v1" => Ok(Obj::Var(0)),
         "v2" => Ok(Obj::Var(1)),
         "v3" => Ok(Obj::Var(2)),
         "v4" => Ok(Obj::Var(3)),
