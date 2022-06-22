@@ -93,7 +93,7 @@ fn tar<S: AsRef<str>>(item: S, space: Space) -> Result<Obj, ()> {
         "v7" => Ok(Obj::Var(6)),
         "v8" => Ok(Obj::Var(7)),
         "v9" => Ok(Obj::Var(8)),
-        "e1" | "e" => Ok(Obj::Var(9)),
+        "e1" => Ok(Obj::Var(9)),
         "e2" => Ok(Obj::Var(10)),
         "e3" => Ok(Obj::Var(11)),
         "e4" => Ok(Obj::Var(12)),

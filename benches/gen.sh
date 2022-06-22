@@ -66,7 +66,7 @@ c * v2 \n
 "
 
 gen "sweep" "
-v = r \n
+v1 = r \n
 r + r \n
 r - r \n
 r * r \n
@@ -95,7 +95,7 @@ r sinh r \n
 r sqrt r \n
 r tan r \n
 r tanh r \n
-r = v \n
+r = v1 \n
 "
 
 gen "space_minimal" "LCH"

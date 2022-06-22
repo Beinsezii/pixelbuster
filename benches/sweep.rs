@@ -9,7 +9,7 @@ use pixelbuster::pbcore::{parse_ops, process, Space};
 use fastrand;
 
 const COUNT: usize = 1920000;
-const OPS: &str = " v = r 
+const OPS: &str = " v1 = r 
  r + r 
  r - r 
  r * r 
@@ -38,7 +38,7 @@ const OPS: &str = " v = r
  r sqrt r 
  r tan r 
  r tanh r 
- r = v 
+ r = v1 
  ";
 
 fn gen_px() -> Vec<f32> {
