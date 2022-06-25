@@ -54,11 +54,13 @@ Operation:
     * cos cosh floor log max min round sin sinh sqrt tan tanh
 
 Notes:
+    Lines beginning with '#' are ignored
+    Lines ending with '\\' are continued to next
+
     v1 through v9 start at 0.0 every pixel
 
     e1 through e9 are 'external variables' that can be assigned starting values
-    Useful for creating things like UI control sliders
-    If not defined, will be 0.0 every pixel like a normal var";
+    Useful for creating things like UI control sliders";
 
 pub fn pixelbuster<S: AsRef<str>>(
     code: S,

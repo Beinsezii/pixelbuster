@@ -77,7 +77,7 @@ impl std::fmt::Display for OpError {
     }
 }
 
-fn tar<S: AsRef<str>>(item: S, space: Space) -> Result<Obj, ()> {
+fn tar(item: &str, space: Space) -> Result<Obj, ()> {
     match item.as_ref() {
         // don't hate I made these with a vim macro
         "c1" => Ok(Obj::Chan(0)),
@@ -109,7 +109,7 @@ fn tar<S: AsRef<str>>(item: S, space: Space) -> Result<Obj, ()> {
     }
 }
 
-fn src<S: AsRef<str>>(item: S, space: Space) -> Result<Obj, ()> {
+fn src(item: &str, space: Space) -> Result<Obj, ()> {
     match item.as_ref() {
         "e" => Ok(Obj::E),
         "pi" => Ok(Obj::Pi),
@@ -127,7 +127,7 @@ fn src<S: AsRef<str>>(item: S, space: Space) -> Result<Obj, ()> {
     }
 }
 
-fn op<S: AsRef<str>>(item: S) -> Result<Op, ()> {
+fn op(item: &str) -> Result<Op, ()> {
     match item.as_ref() {
         "+=" | "+" | "add" => Ok(Op::Add),
         "-=" | "-" | "sub" => Ok(Op::Sub),
@@ -162,7 +162,7 @@ fn op<S: AsRef<str>>(item: S) -> Result<Op, ()> {
     }
 }
 
-fn spc<S: AsRef<str>>(item: S) -> Result<Space, ()> {
+fn spc(item: &str) -> Result<Space, ()> {
     Space::try_from(item.as_ref())
 }
 
@@ -221,10 +221,27 @@ pub fn parse_ops<S: AsRef<str>>(code: S, mut space: Space) -> (Vec<Operation>, V
     let fns = &[oper_space, oper_process];
     // initial Space
     operations.push(Operation::Space(space));
+    let mut items = Vec::<&str>::new();
     for row in code.as_ref().to_ascii_lowercase().trim().split('\n') {
         line += 1;
-        let items = row.split_ascii_whitespace().collect::<Vec<&str>>();
+        if row.starts_with('#') {
+            continue;
+        } else if row.ends_with('\\') {
+            items.extend_from_slice(
+                &row[0..row.len() - 1]
+                    .split_ascii_whitespace()
+                    .collect::<Vec<&str>>(),
+            );
+            continue;
+        } else {
+            items.extend_from_slice(
+                &row[0..row.len()]
+                    .split_ascii_whitespace()
+                    .collect::<Vec<&str>>(),
+            );
+        }
         if items.is_empty() {
+            items = Vec::new();
             continue;
         }
         let mut results = fns
@@ -232,6 +249,7 @@ pub fn parse_ops<S: AsRef<str>>(code: S, mut space: Space) -> (Vec<Operation>, V
             .map(|f| f(&items, &mut space, line))
             .collect::<Vec<Result<Operation, OpError>>>()
             .into_iter();
+        items = Vec::new();
         let mut non_unknown = None;
         if loop {
             match results.next() {
