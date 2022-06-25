@@ -5,7 +5,7 @@ use fastrand;
 use num_cpus;
 
 pub mod parse;
-pub use parse::{parse_ops, Obj, Op, Operation, OpError};
+pub use parse::{parse_ops, Cmp, Obj, Op, OpError, Operation};
 
 pub mod color;
 pub use color::{convert_space, convert_space_alpha, Space};
@@ -50,27 +50,39 @@ fn process_segment<O: AsRef<[Operation]>>(
         space = orig_space;
         // reset vars each iter
         let mut v: [f32; 18] = defaults;
-        for op in ops.iter() {
+        let mut iter = ops.iter();
+        let mut op = match iter.next() {
+            Some(o) => o,
+            None => return,
+        };
+
+        macro_rules! src {
+            ($obj:expr) => {
+                match $obj {
+                    Obj::Chan(i) => pixel[i],
+                    Obj::Var(i) => v[i],
+                    Obj::Num(n) => n,
+                    Obj::E => E,
+                    Obj::Pi => PI,
+                    Obj::Rand => fastrand::f32(),
+                    Obj::Col => ((n + x + y * width) % width) as f32,
+                    Obj::Row => ((n + x + y * width) / width) as f32,
+                    Obj::Width => width as f32,
+                    Obj::Height => height as f32,
+                    Obj::XNorm => (((n + x + y * width) % width) as f32) / width as f32,
+                    Obj::YNorm => (((n + x + y * width) / width) as f32) / height as f32,
+                }
+            };
+        }
+
+        loop {
             match op {
                 Operation::Process {
                     target,
                     operation,
                     source,
                 } => {
-                    let src: f32 = match *source {
-                        Obj::Chan(i) => pixel[i],
-                        Obj::Var(i) => v[i],
-                        Obj::Num(n) => n,
-                        Obj::E => E,
-                        Obj::Pi => PI,
-                        Obj::Rand => fastrand::f32(),
-                        Obj::Col => ((n + x + y * width) % width) as f32,
-                        Obj::Row => ((n + x + y * width) / width) as f32,
-                        Obj::Width => width as f32,
-                        Obj::Height => height as f32,
-                        Obj::XNorm => (((n + x + y * width) % width) as f32) / width as f32,
-                        Obj::YNorm => (((n + x + y * width) / width) as f32) / height as f32,
-                    };
+                    let src: f32 = src!(*source);
 
                     let tar: &mut f32 = match *target {
                         Obj::Chan(i) => &mut pixel[i],
@@ -114,6 +126,32 @@ fn process_segment<O: AsRef<[Operation]>>(
                     convert_space_alpha(*space, *new_space, pixel);
                     space = new_space;
                 }
+                Operation::If {
+                    left,
+                    cmp,
+                    right,
+                    then,
+                } => {
+                    let left = src!(*left);
+
+                    let right = src!(*right);
+
+                    if match cmp {
+                        Cmp::Eq => left == right,
+                        Cmp::NEq => left != right,
+                        Cmp::Gt => left > right,
+                        Cmp::Lt => left < right,
+                        Cmp::GtEq => left >= right,
+                        Cmp::LtEq => left <= right,
+                    } {
+                        op = then.as_ref();
+                        continue;
+                    }
+                }
+            }
+            match iter.next() {
+                Some(o) => op = o,
+                None => break,
             }
         }
         // restore to original if not already

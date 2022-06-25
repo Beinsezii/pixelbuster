@@ -35,6 +35,16 @@ pub enum Op {
 }
 
 #[derive(Clone, Copy, PartialEq)]
+pub enum Cmp {
+    Gt,
+    Lt,
+    Eq,
+    NEq,
+    GtEq,
+    LtEq,
+}
+
+#[derive(Clone, Copy, PartialEq)]
 pub enum Obj {
     Chan(usize),
     Var(usize),
@@ -50,13 +60,19 @@ pub enum Obj {
     YNorm,
 }
 
-#[derive(Clone, Copy, PartialEq)]
+#[derive(Clone, PartialEq)]
 pub enum Operation {
     Space(Space),
     Process {
         target: Obj,
         operation: Op,
         source: Obj,
+    },
+    If {
+        left: Obj,
+        cmp: Cmp,
+        right: Obj,
+        then: Box<Operation>,
     },
 }
 // }}}
@@ -162,6 +178,18 @@ fn op(item: &str) -> Result<Op, ()> {
     }
 }
 
+fn cmp(item: &str) -> Result<Cmp, ()> {
+    match item.as_ref() {
+        "==" | "eq" => Ok(Cmp::Eq),
+        "!=" | "!" | "neq" => Ok(Cmp::NEq),
+        ">" | "gt" => Ok(Cmp::Gt),
+        "<" | "lt" => Ok(Cmp::Lt),
+        ">=" | "gteq" => Ok(Cmp::GtEq),
+        "<=" | "lteq" => Ok(Cmp::LtEq),
+        _ => Err(()),
+    }
+}
+
 fn spc(item: &str) -> Result<Space, ()> {
     Space::try_from(item.as_ref())
 }
@@ -213,12 +241,76 @@ fn oper_process(items: &[&str], space: &mut Space, line: usize) -> Result<Operat
     }
 }
 
+fn oper_if(items: &[&str], space: &mut Space, line: usize) -> Result<Operation, OpError> {
+    if items.len() > 4 {
+        if items[0] != "if" {
+            return Err(OpError::Unknown { line });
+        }
+        let parsed = (src(items[1], *space), cmp(items[2]), src(items[3], *space));
+        if parsed.0.is_err() {
+            Err(OpError::Partial {
+                line,
+                details: "Invalid target".to_string(),
+            })
+        } else if parsed.1.is_err() {
+            Err(OpError::Partial {
+                line,
+                details: "Invalid operator".to_string(),
+            })
+        } else if parsed.2.is_err() {
+            Err(OpError::Partial {
+                line,
+                details: "Invalid source".to_string(),
+            })
+        } else {
+            Ok(Operation::If {
+                left: parsed.0.unwrap(),
+                cmp: parsed.1.unwrap(),
+                right: parsed.2.unwrap(),
+                then: Box::new(parse_op(&items[4..], space, line)?),
+            })
+        }
+    } else {
+        Err(OpError::Unknown { line })
+    }
+}
+
+fn parse_op(items: &[&str], space: &mut Space, line: usize) -> Result<Operation, OpError> {
+    let mut results = [oper_process, oper_space, oper_if]
+        .iter()
+        .map(|f| f(&items, space, line));
+
+    let mut non_unknown = None;
+    loop {
+        match results.next() {
+            Some(i) => match i {
+                Ok(o) => break Ok(o),
+                Err(e) => {
+                    if non_unknown == None
+                        && match e {
+                            OpError::Partial { .. } => true,
+                            OpError::Unknown { .. } => false,
+                        }
+                    {
+                        non_unknown = Some(e)
+                    }
+                }
+            },
+            None => {
+                break Err(match non_unknown {
+                    Some(e) => e,
+                    None => OpError::Unknown { line },
+                })
+            }
+        }
+    }
+}
+
 pub fn parse_ops<S: AsRef<str>>(code: S, mut space: Space) -> (Vec<Operation>, Vec<OpError>) {
     // {{{
     let mut line = 0;
     let mut operations = Vec::<Operation>::new();
     let mut errs = Vec::<OpError>::new();
-    let fns = &[oper_space, oper_process];
     // initial Space
     operations.push(Operation::Space(space));
     let mut items = Vec::<&str>::new();
@@ -244,36 +336,13 @@ pub fn parse_ops<S: AsRef<str>>(code: S, mut space: Space) -> (Vec<Operation>, V
             items = Vec::new();
             continue;
         }
-        let mut results = fns
-            .iter()
-            .map(|f| f(&items, &mut space, line))
-            .collect::<Vec<Result<Operation, OpError>>>()
-            .into_iter();
-        items = Vec::new();
-        let mut non_unknown = None;
-        if loop {
-            match results.next() {
-                Some(i) => match i {
-                    Ok(o) => {
-                        operations.push(o);
-                        break false;
-                    }
-                    Err(e) => {
-                        if non_unknown == None
-                            && match e {
-                                OpError::Partial { .. } => true,
-                                OpError::Unknown { .. } => false,
-                            }
-                        {
-                            non_unknown = Some(e)
-                        }
-                    }
-                },
-                None => break true,
-            }
-        } {
-            errs.push(non_unknown.unwrap_or(OpError::Unknown { line }))
+
+        match parse_op(&items, &mut space, line) {
+            Ok(o) => operations.push(o),
+            Err(e) => errs.push(e),
         }
+
+        items = Vec::new();
     }
 
     (operations, errs)
