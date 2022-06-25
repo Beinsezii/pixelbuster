@@ -8,8 +8,9 @@ pub use pbcore::{parse_ops, process, Operation, Space};
 
 pub const HELP: &str = "\
 Valid lines:
-    {target} {operation} {source}
-    {space}
+    * {target} {operation} {source}
+    * {space}
+    * if {source} {comparison} {source} {line}
 
 Quick Example:
     r ** 2
@@ -52,6 +53,14 @@ Operation:
 
     * abs acos acosh asin asinh atan atan2 atanh cbrt ceil
     * cos cosh floor log max min round sin sinh sqrt tan tanh
+
+Comparison:
+    * '==' or 'eq'
+    * '!=' or '!' or 'neq'
+    * '>' or 'gt'
+    * '<' or 'lt'
+    * '>=' or 'gteq'
+    * '<=' or 'lteq'
 
 Notes:
     Lines beginning with '#' are ignored
