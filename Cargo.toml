@@ -13,9 +13,10 @@ num_cpus = "1"
 
 eframe = {version = "0.18", optional = true}
 image = {version = "0.24", optional = true}
+rfd = {version = "0.9", optional = true}
 
 [features]
-gui = ["dep:eframe", "dep:image"]
+gui = ["dep:eframe", "dep:image", "dep:rfd"]
 
 [lib]
 crate-type = ["lib", "cdylib"]

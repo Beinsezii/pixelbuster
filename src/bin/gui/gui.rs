@@ -1,6 +1,6 @@
 use pixelbuster::{
     pbcore::{parse_ops, process, OpError, Space},
-    HELP,
+    pixelbuster, HELP,
 };
 
 use std::path::Path;
@@ -19,6 +19,8 @@ use eframe::{
 };
 
 use image::{io::Reader, DynamicImage};
+
+use rfd::FileDialog;
 
 pub struct PBGui {
     code: String,
@@ -49,7 +51,35 @@ impl App for PBGui {
                 if ui.button("Update").clicked() {
                     self.process(ctx);
                 }
-
+                if ui.button("Open").clicked() {
+                    if let Some(path) = FileDialog::new()
+                        .add_filter("Images", &["jpg", "png"])
+                        .add_filter("All Files", &["*"])
+                        .pick_file()
+                    {
+                        self.load(ctx, path)
+                    }
+                }
+                if ui.button("Export").clicked() {
+                    if let Some((img, _tex)) = &self.data {
+                        if let Some(path) = FileDialog::new()
+                            .add_filter("Images", &["jpg", "png"])
+                            .add_filter("All Files", &["*"])
+                            .set_file_name("out.png")
+                            .save_file()
+                        {
+                            let mut newimg = img.to_rgba32f();
+                            pixelbuster(
+                                &self.code,
+                                Space::SRGB,
+                                &mut newimg,
+                                img.width() as usize,
+                                None,
+                            );
+                            DynamicImage::from(newimg).into_rgba8().save(path).unwrap()
+                        }
+                    }
+                }
                 ui.toggle_value(&mut self.help, "Help");
             });
             ScrollArea::vertical().show(ui, |ui| {
