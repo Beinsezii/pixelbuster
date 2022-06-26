@@ -8,7 +8,7 @@ fn main() {
     {
         let native_options = eframe::NativeOptions::default();
         eframe::run_native(
-            "My egui App",
+            "Pixelbuster GUI",
             native_options,
             Box::new(|cc| Box::new(gui::PBGui::new(cc, args_os().nth(1)))),
         );
