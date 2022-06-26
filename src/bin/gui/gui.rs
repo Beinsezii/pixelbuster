@@ -39,20 +39,18 @@ pub struct PBGui {
 // App {{{
 impl App for PBGui {
     fn update(&mut self, ctx: &Context, _frame: &mut Frame) {
-        if self.help {
-            Window::new("Help").show(ctx, |ui| {
-                ScrollArea::vertical().show(ui, |ui| ui.label(HELP))
-            });
-        }
+        Window::new("Help")
+            .open(&mut self.help)
+            .vscroll(true)
+            .hscroll(true)
+            .show(ctx, |ui| ui.label(HELP));
         SidePanel::right("toolbox").show(ctx, |ui| {
             ui.horizontal(|ui| {
                 if ui.button("Update").clicked() {
                     self.process(ctx);
                 }
 
-                if ui.button("Help").clicked() {
-                    self.help = !self.help;
-                }
+                ui.toggle_value(&mut self.help, "Help");
             });
             ScrollArea::vertical().show(ui, |ui| {
                 let mut highlighter = |ui: &egui::Ui, text: &str, width: f32| {
@@ -93,19 +91,16 @@ impl App for PBGui {
                         .layouter(&mut highlighter),
                 );
                 ui.horizontal(|ui| {
-                    if ui
-                        .checkbox(&mut self.preview, "Preview".to_string())
-                        .clicked()
-                    {
+                    if ui.toggle_value(&mut self.preview, "Preview").clicked() {
                         self.process(ctx);
                     }
                 });
 
                 ui.columns(4, |cols| {
                     for (n, c) in cols.iter_mut().enumerate() {
-                        if c.checkbox(&mut self.v_checks[n], (n + 1).to_string())
+                        if c.toggle_value(&mut self.v_checks[n], format!("e{}", n + 1))
                             .clicked()
-                            || c.checkbox(&mut self.v_checks[n + 4], (n + 5).to_string())
+                            || c.toggle_value(&mut self.v_checks[n + 4], format!("e{}", n + 5))
                                 .clicked()
                         {
                             self.process(ctx)
@@ -116,19 +111,23 @@ impl App for PBGui {
                 let mut proc = false;
                 for (n, b) in self.v_checks.iter().enumerate() {
                     if *b {
-                        ui.horizontal(|ui| {
+                        ui.group(|ui| {
+                            ui.horizontal(|ui| {
+                                ui.add(DragValue::new(&mut self.v_mins[n]));
+                                ui.label("<=");
+                                ui.strong(format!("e{}", n + 1));
+                                ui.label("<=");
+                                ui.add(DragValue::new(&mut self.v_maxes[n]));
+                            });
                             let slider = Slider::new(
                                 &mut self.externals[n],
                                 self.v_mins[n]..=self.v_maxes[n],
                             )
-                            .prefix(format!("v{}: ", n + 1))
                             .smart_aim(true)
                             .clamp_to_range(false);
-                            ui.add(DragValue::new(&mut self.v_mins[n]));
                             if ui.add(slider).drag_released() {
                                 proc = true;
                             };
-                            ui.add(DragValue::new(&mut self.v_maxes[n]));
                         });
                     }
                 }
