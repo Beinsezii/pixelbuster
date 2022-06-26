@@ -1,4 +1,7 @@
-use pixelbuster::pbcore::{parse_ops, process, OpError, Space};
+use pixelbuster::{
+    pbcore::{parse_ops, process, OpError, Space},
+    HELP,
+};
 
 use std::path::Path;
 use std::time::{Duration, Instant};
@@ -6,7 +9,7 @@ use std::time::{Duration, Instant};
 use eframe::egui;
 use eframe::{
     egui::{
-        containers::ScrollArea,
+        containers::{ScrollArea, Window},
         panel::{CentralPanel, SidePanel},
         text::LayoutJob,
         widgets::{DragValue, Slider, TextEdit},
@@ -21,6 +24,7 @@ pub struct PBGui {
     code: String,
     code_errs: Vec<usize>,
     data: Option<(DynamicImage, TextureHandle)>,
+    help: bool,
     preview: bool,
     t_pre: Duration,
     t_parse: Duration,
@@ -32,10 +36,24 @@ pub struct PBGui {
     externals: [f32; 9],
 }
 
+// App {{{
 impl App for PBGui {
     fn update(&mut self, ctx: &Context, _frame: &mut Frame) {
+        if self.help {
+            Window::new("Help").show(ctx, |ui| {
+                ScrollArea::vertical().show(ui, |ui| ui.label(HELP))
+            });
+        }
         SidePanel::right("toolbox").show(ctx, |ui| {
-            ui.heading("Code go here");
+            ui.horizontal(|ui| {
+                if ui.button("Update").clicked() {
+                    self.process(ctx);
+                }
+
+                if ui.button("Help").clicked() {
+                    self.help = !self.help;
+                }
+            });
             ScrollArea::vertical().show(ui, |ui| {
                 let mut highlighter = |ui: &egui::Ui, text: &str, width: f32| {
                     let mut job = LayoutJob::default();
@@ -75,10 +93,6 @@ impl App for PBGui {
                         .layouter(&mut highlighter),
                 );
                 ui.horizontal(|ui| {
-                    if ui.button("Update").clicked() {
-                        self.process(ctx);
-                    }
-
                     if ui
                         .checkbox(&mut self.preview, "Preview".to_string())
                         .clicked()
@@ -155,7 +169,9 @@ impl App for PBGui {
             });
     }
 }
+// App }}}
 
+// impl PBGui {{{
 impl PBGui {
     pub fn new<P: AsRef<Path>>(cc: &eframe::CreationContext<'_>, path: Option<P>) -> Self {
         // Customize egui here with cc.egui_ctx.set_fonts and cc.egui_ctx.set_visuals.
@@ -176,6 +192,7 @@ impl PBGui {
             code_errs: Vec::new(),
             data: None,
             preview: true,
+            help: false,
             t_pre: Duration::default(),
             t_parse: Duration::default(),
             t_proc: Duration::default(),
@@ -284,3 +301,4 @@ impl PBGui {
         }
     }
 }
+// impl PBGui }}}
