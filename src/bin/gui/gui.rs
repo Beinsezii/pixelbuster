@@ -18,7 +18,7 @@ use eframe::{
     App, Frame,
 };
 
-use image::{io::Reader, DynamicImage};
+use image::{io::Reader, DynamicImage, ImageFormat};
 
 use rfd::FileDialog;
 
@@ -53,33 +53,64 @@ impl App for PBGui {
                 }
                 if ui.button("Open").clicked() {
                     if let Some(path) = FileDialog::new()
-                        .add_filter("Images", &["jpg", "png"])
+                        .add_filter(
+                            "Images",
+                            &[
+                                "avif", "bmp", "dds", "exr", "ff", "gif", "ico", "jpg", "png",
+                                "pnm", "tga", "tiff", "webp",
+                            ],
+                        )
                         .add_filter("All Files", &["*"])
                         .pick_file()
                     {
                         self.load(ctx, path)
                     }
                 }
-                if ui.button("Export").clicked() {
-                    if let Some((img, _tex)) = &self.data {
-                        if let Some(path) = FileDialog::new()
-                            .add_filter("Images", &["jpg", "png"])
-                            .add_filter("All Files", &["*"])
-                            .set_file_name("out.png")
-                            .save_file()
-                        {
-                            let mut newimg = img.to_rgba32f();
-                            pixelbuster(
-                                &self.code,
-                                Space::SRGB,
-                                &mut newimg,
-                                img.width() as usize,
-                                None,
-                            );
-                            DynamicImage::from(newimg).into_rgba8().save(path).unwrap()
+                ui.menu_button("Export", |ui| {
+                    let formats: &[(&str, fn(DynamicImage, std::path::PathBuf))] = &[
+                        ("png", |img, path| {
+                            img.into_rgba8()
+                                .save_with_format(path, ImageFormat::Png)
+                                .unwrap()
+                        }),
+                        ("jpg", |img, path| {
+                            img.into_rgb8()
+                                .save_with_format(path, ImageFormat::Jpeg)
+                                .unwrap()
+                        }),
+                        ("exr", |img, path| {
+                            img.into_rgba32f()
+                                .save_with_format(path, ImageFormat::OpenExr)
+                                .unwrap()
+                        }),
+                    ];
+                    for (ext, func) in formats {
+                        if ui.button(ext.to_ascii_uppercase()).clicked() {
+                            if let Some((img, _tex)) = &self.data {
+                                if let Some(path) = FileDialog::new()
+                                    .add_filter(
+                                        &format!("{} Images", ext.to_ascii_uppercase()),
+                                        &[ext],
+                                    )
+                                    .add_filter("All Files", &["*"])
+                                    .set_file_name(&format!("out.{}", ext))
+                                    .save_file()
+                                {
+                                    let mut newimg = img.to_rgba32f();
+                                    pixelbuster(
+                                        &self.code,
+                                        Space::SRGB,
+                                        &mut newimg,
+                                        img.width() as usize,
+                                        None,
+                                    );
+                                    func(DynamicImage::from(newimg), path);
+                                }
+                            }
+                            ui.close_menu()
                         }
                     }
-                }
+                });
                 ui.toggle_value(&mut self.help, "Help");
             });
             ScrollArea::vertical().show(ui, |ui| {
