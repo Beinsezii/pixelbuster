@@ -69,6 +69,8 @@ Notes:
     Lines ending with '\\' are continued to next
     ';' counts as a linebreak anywhere in code
 
+    There's a hard limit of 99 jumps per pixel as it can't detect loops
+
     v1 through v9 start at 0.0 every pixel
 
     e1 through e9 are 'external variables' that can be assigned starting values
@@ -89,11 +91,9 @@ pub extern "C" fn pixelbuster_ffi(
     code: *const c_char,
     channels: *const c_char,
     pixels: *mut u8,
+    pixels_size: usize,
     width: usize,
-    len: usize,
 ) {
-    let len = len / 4;
-
     let code = unsafe {
         assert!(!code.is_null());
         std::ffi::CStr::from_ptr(code)
@@ -110,7 +110,7 @@ pub extern "C" fn pixelbuster_ffi(
     };
     let pixels = unsafe {
         assert!(!pixels.is_null());
-        std::slice::from_raw_parts_mut(pixels.cast::<f32>(), len)
+        std::slice::from_raw_parts_mut(pixels.cast::<f32>(), pixels_size / 4)
     };
 
     pixelbuster(
