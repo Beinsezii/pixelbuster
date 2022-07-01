@@ -1,7 +1,7 @@
 use super::Space;
 
 // structs {{{
-#[derive(Clone, Copy, PartialEq, Eq)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum Op {
     Add,
     Sub,
@@ -34,7 +34,7 @@ pub enum Op {
     Tanh,
 }
 
-#[derive(Clone, Copy, PartialEq)]
+#[derive(Clone, Copy, Debug, PartialEq)]
 pub enum Cmp {
     Gt,
     Lt,
@@ -44,7 +44,7 @@ pub enum Cmp {
     LtEq,
 }
 
-#[derive(Clone, Copy, PartialEq)]
+#[derive(Clone, Copy, Debug, PartialEq)]
 pub enum Obj {
     Chan(usize),
     Var(usize),
@@ -60,7 +60,7 @@ pub enum Obj {
     YNorm,
 }
 
-#[derive(Clone, PartialEq)]
+#[derive(Clone, Debug, PartialEq)]
 pub enum Operation {
     Space(Space),
     Process {
@@ -74,6 +74,8 @@ pub enum Operation {
         right: Obj,
         then: Box<Operation>,
     },
+    Goto(usize),
+    GotoTmp(String),
 }
 // }}}
 
@@ -275,8 +277,20 @@ fn oper_if(items: &[&str], space: &mut Space, line: usize) -> Result<Operation, 
     }
 }
 
+fn oper_jmp(items: &[&str], _space: &mut Space, line: usize) -> Result<Operation, OpError> {
+    if items.len() == 2 {
+        if items[0] == "goto" || items[0] == "jmp" {
+            Ok(Operation::GotoTmp(items[1].to_string()))
+        } else {
+            Err(OpError::Unknown { line })
+        }
+    } else {
+        Err(OpError::Unknown { line })
+    }
+}
+
 fn parse_op(items: &[&str], space: &mut Space, line: usize) -> Result<Operation, OpError> {
-    let mut results = [oper_process, oper_space, oper_if]
+    let mut results = [oper_process, oper_space, oper_if, oper_jmp]
         .iter()
         .map(|f| f(&items, space, line));
 
@@ -311,6 +325,7 @@ pub fn parse_ops<S: AsRef<str>>(code: S, mut space: Space) -> (Vec<Operation>, V
     let mut line = 0;
     let mut operations = Vec::<Operation>::new();
     let mut errs = Vec::<OpError>::new();
+    let mut labels = std::collections::HashMap::<String, usize>::new();
     // initial Space
     operations.push(Operation::Space(space));
     let mut items = Vec::<&str>::new();
@@ -326,6 +341,8 @@ pub fn parse_ops<S: AsRef<str>>(code: S, mut space: Space) -> (Vec<Operation>, V
                         .collect::<Vec<&str>>(),
                 );
                 continue;
+            } else if row.starts_with(":") {
+                labels.insert(row[1..].to_string(), operations.len());
             } else {
                 items.extend_from_slice(
                     &row[0..row.len()]
@@ -346,6 +363,33 @@ pub fn parse_ops<S: AsRef<str>>(code: S, mut space: Space) -> (Vec<Operation>, V
             items = Vec::new();
         }
     }
+
+    operations = operations
+        .into_iter()
+        .filter_map(|o| match o {
+            Operation::GotoTmp(s) => labels.get(&s).map(|i| Operation::Goto(*i)),
+            Operation::If {
+                left,
+                cmp,
+                right,
+                then,
+            } => match *then {
+                Operation::GotoTmp(s) => labels.get(&s).map(|i| Operation::If {
+                    left,
+                    cmp,
+                    right,
+                    then: Box::new(Operation::Goto(*i)),
+                }),
+                _ => Some(Operation::If {
+                    left,
+                    cmp,
+                    right,
+                    then,
+                }),
+            },
+            op => Some(op),
+        })
+        .collect();
 
     (operations, errs)
 } // }}}

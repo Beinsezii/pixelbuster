@@ -50,6 +50,7 @@ fn process_segment<O: AsRef<[Operation]>>(
         space = orig_space;
         // reset vars each iter
         let mut v: [f32; 18] = defaults;
+        let mut goto_breaker = 0;
         let mut iter = ops.iter();
         let mut op = match iter.next() {
             Some(o) => o,
@@ -148,6 +149,15 @@ fn process_segment<O: AsRef<[Operation]>>(
                         continue;
                     }
                 }
+                Operation::Goto(i) => {
+                    if goto_breaker < 100 {
+                    iter = ops[*i..].iter();
+                    goto_breaker += 1;
+                    } else {
+                        break
+                    }
+                }
+                Operation::GotoTmp(_) => panic!("GotoTmp shouldn't be sent to process!"),
             }
             match iter.next() {
                 Some(o) => op = o,

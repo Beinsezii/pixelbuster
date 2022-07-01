@@ -11,6 +11,8 @@ Valid lines:
     * {target} {operation} {source}
     * {space}
     * if {source} {comparison} {source} {line}
+    * :{label}
+    * jmp {label} or goto {label}
 
 Quick Example:
     r ** 2
