@@ -65,6 +65,7 @@ Comparison:
 Notes:
     Lines beginning with '#' are ignored
     Lines ending with '\\' are continued to next
+    ';' counts as a linebreak anywhere in code
 
     v1 through v9 start at 0.0 every pixel
 

@@ -314,35 +314,37 @@ pub fn parse_ops<S: AsRef<str>>(code: S, mut space: Space) -> (Vec<Operation>, V
     // initial Space
     operations.push(Operation::Space(space));
     let mut items = Vec::<&str>::new();
-    for row in code.as_ref().to_ascii_lowercase().trim().split('\n') {
+    for fullrow in code.as_ref().to_ascii_lowercase().trim().split('\n') {
         line += 1;
-        if row.starts_with('#') {
-            continue;
-        } else if row.ends_with('\\') {
-            items.extend_from_slice(
-                &row[0..row.len() - 1]
-                    .split_ascii_whitespace()
-                    .collect::<Vec<&str>>(),
-            );
-            continue;
-        } else {
-            items.extend_from_slice(
-                &row[0..row.len()]
-                    .split_ascii_whitespace()
-                    .collect::<Vec<&str>>(),
-            );
-        }
-        if items.is_empty() {
+        for row in fullrow.split(';') {
+            if row.starts_with('#') {
+                continue;
+            } else if row.ends_with('\\') {
+                items.extend_from_slice(
+                    &row[0..row.len() - 1]
+                        .split_ascii_whitespace()
+                        .collect::<Vec<&str>>(),
+                );
+                continue;
+            } else {
+                items.extend_from_slice(
+                    &row[0..row.len()]
+                        .split_ascii_whitespace()
+                        .collect::<Vec<&str>>(),
+                );
+            }
+            if items.is_empty() {
+                items = Vec::new();
+                continue;
+            }
+
+            match parse_op(&items, &mut space, line) {
+                Ok(o) => operations.push(o),
+                Err(e) => errs.push(e),
+            }
+
             items = Vec::new();
-            continue;
         }
-
-        match parse_op(&items, &mut space, line) {
-            Ok(o) => operations.push(o),
-            Err(e) => errs.push(e),
-        }
-
-        items = Vec::new();
     }
 
     (operations, errs)
