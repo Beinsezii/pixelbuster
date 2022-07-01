@@ -10,7 +10,7 @@ A pixel math library because I can
     * a whole 18 variables you can use, currently limited by the technology of our time.
 
 ## Implementations
-  * [GIMP plugin here](https://github.com/Beinsezii/bsz-gim-plugins)
+  * [GIMP plugin here](https://github.com/Beinsezii/bsz-gimp-plugins)
   * a simple GUI can be built with `--features=gui` or found in the releases
 
 ## WIP/Why this isn't 1.0 yet
