@@ -13,7 +13,7 @@ use eframe::{
         panel::{CentralPanel, SidePanel},
         text::LayoutJob,
         widgets::{DragValue, Slider, TextEdit},
-        Color32, ColorImage, Context, Stroke, Style, TextFormat, TextureHandle, Visuals,
+        Color32, ColorImage, Context, FontId, Stroke, Style, TextFormat, TextureHandle, Visuals,
     },
     App, Frame,
 };
@@ -137,6 +137,7 @@ impl App for PBGui {
                                 } else {
                                     Stroke::default()
                                 },
+                                font_id: FontId::monospace(14.0),
                                 ..Default::default()
                             },
                         );
