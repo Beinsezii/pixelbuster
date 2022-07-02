@@ -4,6 +4,7 @@ use core::f32::consts::PI;
 pub enum Space {
     SRGB,
     HSV,
+    LRGB,
     XYZ,
     LAB,
     LCH,
@@ -14,6 +15,7 @@ impl ToString for Space {
         match self {
             Space::SRGB => String::from("rgba"),
             Space::HSV => String::from("hsva"),
+            Space::LRGB => String::from("rgba"),
             Space::XYZ => String::from("xyza"),
             Space::LAB => String::from("laba"),
             Space::LCH => String::from("lcha"),
@@ -25,8 +27,9 @@ impl TryFrom<&str> for Space {
     type Error = ();
     fn try_from(value: &str) -> Result<Self, ()> {
         match value.to_ascii_lowercase().trim() {
-            "srgb" | "rgb" | "srgba" | "rgba" => Ok(Space::SRGB),
+            "srgb" | "srgba" => Ok(Space::SRGB),
             "hsv" | "hsva" => Ok(Space::HSV),
+            "lrgb" | "lrgba" | "rgb" | "rgba" => Ok(Space::LRGB),
             "xyz" | "xyza" => Ok(Space::XYZ),
             // TODO use alpha with LAB without using "c4"???
             "lab" | "laba" => Ok(Space::LAB),
@@ -42,30 +45,41 @@ pub fn convert_space(from: Space, to: Space, pixel: &mut [f32; 3]) {
         // No-op
         (Space::SRGB, Space::SRGB)
         | (Space::HSV, Space::HSV)
+        | (Space::LRGB, Space::LRGB)
         | (Space::XYZ, Space::XYZ)
         | (Space::LAB, Space::LAB)
         | (Space::LCH, Space::LCH) => (),
         // Up
         (Space::SRGB, Space::HSV) => srgb_to_hsv(pixel),
-        (Space::SRGB, Space::XYZ) => srgb_to_xyz(pixel),
-        (Space::SRGB, Space::LAB) => {srgb_to_xyz(pixel); xyz_to_lab(pixel)},
-        (Space::SRGB, Space::LCH) => {srgb_to_xyz(pixel); xyz_to_lab(pixel); lab_to_lch(pixel)},
+        (Space::SRGB, Space::LRGB) => srgb_to_lrgb(pixel),
+        (Space::SRGB, Space::XYZ) => {srgb_to_lrgb(pixel); lrgb_to_xyz(pixel)},
+        (Space::SRGB, Space::LAB) => {srgb_to_lrgb(pixel); lrgb_to_xyz(pixel); xyz_to_lab(pixel)},
+        (Space::SRGB, Space::LCH) => {srgb_to_lrgb(pixel); lrgb_to_xyz(pixel); xyz_to_lab(pixel); lab_to_lch(pixel)},
+        (Space::LRGB, Space::XYZ) => lrgb_to_xyz(pixel),
+        (Space::LRGB, Space::LAB) => {lrgb_to_xyz(pixel); xyz_to_lab(pixel)},
+        (Space::LRGB, Space::LCH) => {lrgb_to_xyz(pixel); xyz_to_lab(pixel); lab_to_lch(pixel)},
         (Space::XYZ, Space::LAB) => xyz_to_lab(pixel),
         (Space::XYZ, Space::LCH) => {xyz_to_lab(pixel); lab_to_lch(pixel)},
         (Space::LAB, Space::LCH) => lab_to_lch(pixel),
-        (Space::HSV, Space::XYZ) => {hsv_to_srgb(pixel); srgb_to_xyz(pixel)},
-        (Space::HSV, Space::LAB) => {hsv_to_srgb(pixel); srgb_to_xyz(pixel); xyz_to_lab(pixel)},
-        (Space::HSV, Space::LCH) => {hsv_to_srgb(pixel); srgb_to_xyz(pixel); xyz_to_lab(pixel); lab_to_lch(pixel)},
+        (Space::HSV, Space::LRGB) => {hsv_to_srgb(pixel); srgb_to_lrgb(pixel)},
+        (Space::HSV, Space::XYZ) => {hsv_to_srgb(pixel); srgb_to_lrgb(pixel); lrgb_to_xyz(pixel)},
+        (Space::HSV, Space::LAB) => {hsv_to_srgb(pixel); srgb_to_lrgb(pixel); lrgb_to_xyz(pixel); xyz_to_lab(pixel)},
+        (Space::HSV, Space::LCH) => {hsv_to_srgb(pixel); srgb_to_lrgb(pixel); lrgb_to_xyz(pixel); xyz_to_lab(pixel); lab_to_lch(pixel)},
         // Down
         (Space::LCH, Space::LAB) => lch_to_lab(pixel),
         (Space::LCH, Space::XYZ) => {lch_to_lab(pixel); lab_to_xyz(pixel)},
-        (Space::LCH, Space::SRGB) => {lch_to_lab(pixel); lab_to_xyz(pixel); xyz_to_srgb(pixel)},
-        (Space::LCH, Space::HSV) => {lch_to_lab(pixel); lab_to_xyz(pixel); xyz_to_srgb(pixel); srgb_to_hsv(pixel)},
+        (Space::LCH, Space::LRGB) => {lch_to_lab(pixel); lab_to_xyz(pixel); xyz_to_lrgb(pixel)},
+        (Space::LCH, Space::SRGB) => {lch_to_lab(pixel); lab_to_xyz(pixel); xyz_to_lrgb(pixel); lrgb_to_srgb(pixel)},
+        (Space::LCH, Space::HSV) => {lch_to_lab(pixel); lab_to_xyz(pixel); xyz_to_lrgb(pixel); lrgb_to_srgb(pixel); srgb_to_hsv(pixel)},
         (Space::LAB, Space::XYZ) => lab_to_xyz(pixel),
-        (Space::LAB, Space::SRGB) => {lab_to_xyz(pixel); xyz_to_srgb(pixel)},
-        (Space::LAB, Space::HSV) => {lab_to_xyz(pixel); xyz_to_srgb(pixel); srgb_to_hsv(pixel)},
-        (Space::XYZ, Space::SRGB) => xyz_to_srgb(pixel),
-        (Space::XYZ, Space::HSV) => {xyz_to_srgb(pixel); srgb_to_hsv(pixel)},
+        (Space::LAB, Space::LRGB) => {lab_to_xyz(pixel); xyz_to_lrgb(pixel)},
+        (Space::LAB, Space::SRGB) => {lab_to_xyz(pixel); xyz_to_lrgb(pixel); lrgb_to_srgb(pixel)},
+        (Space::LAB, Space::HSV) => {lab_to_xyz(pixel); xyz_to_lrgb(pixel); lrgb_to_srgb(pixel); srgb_to_hsv(pixel)},
+        (Space::XYZ, Space::SRGB) => {xyz_to_lrgb(pixel); lrgb_to_srgb(pixel)},
+        (Space::XYZ, Space::LRGB) => xyz_to_lrgb(pixel),
+        (Space::XYZ, Space::HSV) => {xyz_to_lrgb(pixel); lrgb_to_srgb(pixel); srgb_to_hsv(pixel)},
+        (Space::LRGB, Space::SRGB) => lrgb_to_srgb(pixel),
+        (Space::LRGB, Space::HSV) => {lrgb_to_srgb(pixel); srgb_to_hsv(pixel)},
         (Space::HSV, Space::SRGB) => hsv_to_srgb(pixel),
     }
 }
@@ -140,7 +154,7 @@ pub fn srgb_to_hsv(pixel: &mut [f32; 3]) {
     *pixel = [h, s, v];
 }
 
-pub fn srgb_to_xyz(pixel: &mut [f32; 3]) {
+pub fn srgb_to_lrgb(pixel: &mut [f32; 3]) {
     pixel.iter_mut().for_each(|c| {
         if *c <= 0.04045 {
             *c /= 12.92
@@ -148,6 +162,9 @@ pub fn srgb_to_xyz(pixel: &mut [f32; 3]) {
             *c = ((*c + 0.055) / 1.055_f32).powf(2.4)
         }
     });
+}
+
+pub fn lrgb_to_xyz(pixel: &mut [f32; 3]) {
     *pixel = [
         (0.4124 * pixel[0] + 0.3576 * pixel[1] + 0.1805 * pixel[2]) * 100.0, // X
         (0.2126 * pixel[0] + 0.7152 * pixel[1] + 0.0722 * pixel[2]) * 100.0, // Y
@@ -263,14 +280,7 @@ pub fn hsv_to_srgb(pixel: &mut [f32; 3]) {
     }
 }
 
-/// Set from XYZ
-pub fn xyz_to_srgb(pixel: &mut [f32; 3]) {
-    pixel.iter_mut().for_each(|c| *c /= 100.0);
-    *pixel = [
-        3.2406 * pixel[0] - 1.5372 * pixel[1] - 0.4986 * pixel[2],
-        -0.9689 * pixel[0] + 1.8758 * pixel[1] + 0.0415 * pixel[2],
-        0.0557 * pixel[0] - 0.2040 * pixel[1] + 1.0570 * pixel[2],
-    ];
+pub fn lrgb_to_srgb(pixel: &mut [f32; 3]) {
     pixel.iter_mut().for_each(|c| {
         if *c <= 0.0031308 {
             *c *= 12.92
@@ -278,6 +288,16 @@ pub fn xyz_to_srgb(pixel: &mut [f32; 3]) {
             *c = 1.055 * (c.powf(1.0 / 2.4)) - 0.055
         }
     });
+}
+
+/// Set from XYZ
+pub fn xyz_to_lrgb(pixel: &mut [f32; 3]) {
+    pixel.iter_mut().for_each(|c| *c /= 100.0);
+    *pixel = [
+        3.2406 * pixel[0] - 1.5372 * pixel[1] - 0.4986 * pixel[2],
+        -0.9689 * pixel[0] + 1.8758 * pixel[1] + 0.0415 * pixel[2],
+        0.0557 * pixel[0] - 0.2040 * pixel[1] + 1.0570 * pixel[2],
+    ];
 }
 
 /// Set from CIE LAB
@@ -340,14 +360,16 @@ mod tests {
     #[test]
     fn xyz_up() {
         let mut pixel = RGB;
-        srgb_to_xyz(&mut pixel);
+        srgb_to_lrgb(&mut pixel);
+        lrgb_to_xyz(&mut pixel);
         pixcmp(pixel, XYZ);
     }
 
     #[test]
     fn xyz_down() {
         let mut pixel = XYZ;
-        xyz_to_srgb(&mut pixel);
+        xyz_to_lrgb(&mut pixel);
+        lrgb_to_srgb(&mut pixel);
         pixcmp(pixel, RGB);
     }
 

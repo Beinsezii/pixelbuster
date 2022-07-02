@@ -99,7 +99,7 @@ impl App for PBGui {
                                     let mut newimg = img.to_rgba32f();
                                     pixelbuster(
                                         &self.code,
-                                        Space::SRGB,
+                                        Space::LRGB,
                                         &mut newimg,
                                         img.width() as usize,
                                         None,
@@ -313,7 +313,7 @@ impl PBGui {
                 // parse into ops
                 let i_parse = Instant::now();
 
-                let ops = parse_ops(&self.code, Space::SRGB);
+                let ops = parse_ops(&self.code, Space::LRGB);
 
                 self.t_parse = Instant::now() - i_parse;
 
