@@ -76,6 +76,10 @@ pub enum Operation {
     },
     Goto(usize),
     GotoTmp(String),
+    Swap {
+        t1: Obj,
+        t2: Obj,
+    },
 }
 // }}}
 
@@ -289,8 +293,36 @@ fn oper_jmp(items: &[&str], _space: &mut Space, line: usize) -> Result<Operation
     }
 }
 
+fn oper_swap(items: &[&str], space: &mut Space, line: usize) -> Result<Operation, OpError> {
+    if items.len() == 3 {
+        if items[0] == "swap" {
+            let parsed = (tar(items[1], *space), tar(items[2], *space));
+            if parsed.0.is_err() {
+                Err(OpError::Partial {
+                    line,
+                    details: "Invalid left target".to_string(),
+                })
+            } else if parsed.1.is_err() {
+                Err(OpError::Partial {
+                    line,
+                    details: "Invalid right target".to_string(),
+                })
+            } else {
+                Ok(Operation::Swap {
+                    t1: parsed.0.unwrap(),
+                    t2: parsed.1.unwrap(),
+                })
+            }
+        } else {
+            Err(OpError::Unknown { line })
+        }
+    } else {
+        Err(OpError::Unknown { line })
+    }
+}
+
 fn parse_op(items: &[&str], space: &mut Space, line: usize) -> Result<Operation, OpError> {
-    let mut results = [oper_process, oper_space, oper_if, oper_jmp]
+    let mut results = [oper_process, oper_space, oper_if, oper_jmp, oper_swap]
         .iter()
         .map(|f| f(&items, space, line));
 

@@ -57,6 +57,16 @@ fn process_segment<O: AsRef<[Operation]>>(
             None => return,
         };
 
+        macro_rules! tar {
+            ($obj:expr) => {
+                match $obj {
+                    Obj::Chan(i) => &mut pixel[i],
+                    Obj::Var(i) => &mut v[i],
+                    _ => panic!("This shouldn't be reachable"),
+                }
+            };
+        }
+
         macro_rules! src {
             ($obj:expr) => {
                 match $obj {
@@ -85,11 +95,7 @@ fn process_segment<O: AsRef<[Operation]>>(
                 } => {
                     let src: f32 = src!(*source);
 
-                    let tar: &mut f32 = match *target {
-                        Obj::Chan(i) => &mut pixel[i],
-                        Obj::Var(i) => &mut v[i],
-                        _ => panic!("This shouldn't be reachable"),
-                    };
+                    let tar: &mut f32 = tar!(*target);
 
                     match operation {
                         Op::Add => *tar += src,
@@ -151,13 +157,17 @@ fn process_segment<O: AsRef<[Operation]>>(
                 }
                 Operation::Goto(i) => {
                     if goto_breaker < 100 {
-                    iter = ops[*i..].iter();
-                    goto_breaker += 1;
+                        iter = ops[*i..].iter();
+                        goto_breaker += 1;
                     } else {
-                        break
+                        break;
                     }
                 }
                 Operation::GotoTmp(_) => panic!("GotoTmp shouldn't be sent to process!"),
+                // hypothetically should be safe, as the pointers can't be uninitialized?
+                Operation::Swap { t1, t2 } => unsafe {
+                    std::ptr::swap(tar!(*t1), tar!(*t2));
+                },
             }
             match iter.next() {
                 Some(o) => op = o,

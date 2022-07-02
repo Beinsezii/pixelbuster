@@ -13,6 +13,7 @@ Valid lines:
     * if {source} {comparison} {source} {line}
     * :{label}
     * jmp {label} or goto {label}
+    * swap {target} {target}
 
 Quick Example:
     r ** 2
