@@ -40,6 +40,8 @@ There's currently only 2 fns available via FFI:
 Simply returns a null-terminated UTF-8 string with HELP
 
 ### GUI/GIMP
+<img width=300 src="./src/bin/gui/screenshot.png"/>
+
  1) Type code
  2) Press "update"
  3) Impress mates
