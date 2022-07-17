@@ -79,9 +79,19 @@ impl App for PBGui {
             .show(ctx, |ui| ui.label(HELP));
         SidePanel::right("toolbox").show(ctx, |ui| {
             ui.horizontal(|ui| {
-                if ui.button("Update").clicked() {
-                    self.process(ctx);
-                }
+                ui.menu_button("Extra", |ui| {
+                    ui.toggle_value(&mut self.help, "Help");
+
+                    ui.horizontal(|ui| {
+                        ui.label("Pixel Size: ");
+                        if ui
+                            .add(DragValue::new(&mut self.pixel_size).clamp_range(1..=8))
+                            .drag_released()
+                        {
+                            self.process(&ctx)
+                        }
+                    });
+                });
                 if ui.button("Open").clicked() {
                     if let Some(path) = FileDialog::new()
                         .add_filter(
@@ -142,15 +152,8 @@ impl App for PBGui {
                         }
                     }
                 });
-                ui.toggle_value(&mut self.help, "Help");
-            });
-            ui.horizontal(|ui| {
-                ui.label("Pixel Size: ");
-                if ui
-                    .add(DragValue::new(&mut self.pixel_size).clamp_range(1..=8))
-                    .drag_released()
-                {
-                    self.process(&ctx)
+                if ui.button("Update").clicked() {
+                    self.process(ctx);
                 }
             });
             ScrollArea::vertical().show(ui, |ui| {
