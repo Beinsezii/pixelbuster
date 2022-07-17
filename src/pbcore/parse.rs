@@ -1,5 +1,7 @@
 use super::Space;
 
+use std::collections::HashMap;
+
 // structs {{{
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum Op {
@@ -352,12 +354,30 @@ fn parse_op(items: &[&str], space: &mut Space, line: usize) -> Result<Operation,
     }
 }
 
+fn goto_conv(op: Option<Operation>, labels: &HashMap<String, usize>) -> Option<Operation> {
+    match op {
+        Some(Operation::GotoTmp(s)) => labels.get(&s).map(|i| Operation::Goto(*i)),
+        Some(Operation::If {
+            left,
+            cmp,
+            right,
+            then,
+        }) => goto_conv(Some(*then), labels).map(|t| Operation::If {
+            left,
+            cmp,
+            right,
+            then: Box::new(t),
+        }),
+        other => other,
+    }
+}
+
 pub fn parse_ops<S: AsRef<str>>(code: S, mut space: Space) -> (Vec<Operation>, Vec<OpError>) {
     // {{{
     let mut line = 0;
     let mut operations = Vec::<Operation>::new();
     let mut errs = Vec::<OpError>::new();
-    let mut labels = std::collections::HashMap::<String, usize>::new();
+    let mut labels = HashMap::<String, usize>::new();
     // initial Space
     operations.push(Operation::Space(space));
     let mut items = Vec::<&str>::new();
@@ -398,29 +418,7 @@ pub fn parse_ops<S: AsRef<str>>(code: S, mut space: Space) -> (Vec<Operation>, V
 
     operations = operations
         .into_iter()
-        .filter_map(|o| match o {
-            Operation::GotoTmp(s) => labels.get(&s).map(|i| Operation::Goto(*i)),
-            Operation::If {
-                left,
-                cmp,
-                right,
-                then,
-            } => match *then {
-                Operation::GotoTmp(s) => labels.get(&s).map(|i| Operation::If {
-                    left,
-                    cmp,
-                    right,
-                    then: Box::new(Operation::Goto(*i)),
-                }),
-                _ => Some(Operation::If {
-                    left,
-                    cmp,
-                    right,
-                    then,
-                }),
-            },
-            op => Some(op),
-        })
+        .filter_map(|o| goto_conv(Some(o), &labels))
         .collect();
 
     (operations, errs)
