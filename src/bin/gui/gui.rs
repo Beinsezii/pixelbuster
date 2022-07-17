@@ -143,7 +143,7 @@ impl App for PBGui {
                                         Space::SRGB,
                                         &mut newimg,
                                         img.width() as usize,
-                                        None,
+                                        Some(self.externals),
                                     );
                                     func(DynamicImage::from(newimg), path);
                                 }
