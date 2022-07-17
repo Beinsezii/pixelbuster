@@ -18,16 +18,47 @@ use eframe::{
     App, Frame,
 };
 
-use image::{io::Reader, DynamicImage, ImageFormat};
+use image::{io::Reader, DynamicImage, ImageFormat, Rgba32FImage};
 
 use rfd::FileDialog;
+
+fn quickshrink(img: &Rgba32FImage, pixelsize: usize) -> Rgba32FImage {
+    if pixelsize <= 1 {
+        return img.clone();
+    }
+    let (nw, nh) = (
+        img.width() as usize / pixelsize,
+        img.height() as usize / pixelsize,
+    );
+
+    let mut new = Rgba32FImage::new(nw as u32, nh as u32);
+
+    let inew = new.as_mut().chunks_mut(4);
+    let mut iold = img.as_ref().chunks(4);
+
+    for (n, cnew) in inew.enumerate() {
+        if let Some(cold) = iold.nth(if n % nw != 0 {
+            pixelsize - 1
+        } else {
+            img.width() as usize * (pixelsize - 1)
+                + (img.width() as usize - (nw * pixelsize))
+                + pixelsize
+                - 1
+        }) {
+            cnew.copy_from_slice(cold);
+        }
+    }
+
+    new
+}
 
 pub struct PBGui {
     code: String,
     code_errs: Vec<usize>,
-    data: Option<(DynamicImage, TextureHandle)>,
+    data: Option<(Rgba32FImage, TextureHandle)>,
     help: bool,
     preview: bool,
+    pixel_size: usize,
     t_pre: Duration,
     t_parse: Duration,
     t_proc: Duration,
@@ -96,7 +127,7 @@ impl App for PBGui {
                                     .set_file_name(&format!("out.{}", ext))
                                     .save_file()
                                 {
-                                    let mut newimg = img.to_rgba32f();
+                                    let mut newimg = img.clone();
                                     pixelbuster(
                                         &self.code,
                                         Space::SRGB,
@@ -112,6 +143,15 @@ impl App for PBGui {
                     }
                 });
                 ui.toggle_value(&mut self.help, "Help");
+            });
+            ui.horizontal(|ui| {
+                ui.label("Pixel Size: ");
+                if ui
+                    .add(DragValue::new(&mut self.pixel_size).clamp_range(1..=8))
+                    .drag_released()
+                {
+                    self.process(&ctx)
+                }
             });
             ScrollArea::vertical().show(ui, |ui| {
                 let mut highlighter = |ui: &egui::Ui, text: &str, width: f32| {
@@ -253,6 +293,7 @@ impl PBGui {
             code_errs: Vec::new(),
             data: None,
             preview: true,
+            pixel_size: 1,
             help: false,
             t_pre: Duration::default(),
             t_parse: Duration::default(),
@@ -286,7 +327,7 @@ impl PBGui {
                         &img.to_rgba8(),
                     ),
                 );
-                Some((img, ctx))
+                Some((img.into_rgba32f(), ctx))
             })
         {
             self.data = data;
@@ -300,8 +341,9 @@ impl PBGui {
             if self.preview {
                 // fetch data
                 let i_pre = Instant::now();
-                let mut pixels = img.to_rgba32f();
-                let width = img.width() as usize;
+                let mut pixels = quickshrink(img, self.pixel_size);
+                let width = pixels.width() as usize;
+                let height = pixels.height() as usize;
                 let mut externals = self.externals;
                 self.v_checks.iter().enumerate().for_each(|(n, v)| {
                     if !v {
@@ -346,7 +388,7 @@ impl PBGui {
                 *tex = ctx.load_texture(
                     "img",
                     ColorImage::from_rgba_unmultiplied(
-                        [img.width() as usize, img.height() as usize],
+                        [width as usize, height as usize],
                         pixels.as_ref(),
                     ),
                 );
@@ -354,8 +396,13 @@ impl PBGui {
                 *tex = ctx.load_texture(
                     "img",
                     ColorImage::from_rgba_unmultiplied(
-                        [img.width() as usize, img.height() as usize],
-                        img.to_rgba8().as_ref(),
+                        [
+                            img.width() as usize / self.pixel_size,
+                            img.height() as usize / self.pixel_size,
+                        ],
+                        DynamicImage::from(quickshrink(img, self.pixel_size))
+                            .into_rgba8()
+                            .as_ref(),
                     ),
                 )
             }
