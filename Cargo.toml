@@ -1,6 +1,6 @@
 [package]
 name = "pixelbuster"
-version = "0.1.1"
+version = "0.2.0"
 authors = ["Beinsezii <beinsezii@gmail.com>"]
 edition = "2021"
 
