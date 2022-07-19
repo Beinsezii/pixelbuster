@@ -98,6 +98,7 @@ fn process_segment<O: AsRef<[Operation]>>(
                     let tar: &mut f32 = tar!(*target);
 
                     match operation {
+                        // Base
                         Op::Add => *tar += src,
                         Op::Sub => *tar -= src,
                         Op::Mul => *tar *= src,
@@ -105,6 +106,7 @@ fn process_segment<O: AsRef<[Operation]>>(
                         Op::Mod => *tar %= src,
                         Op::Pow => *tar = tar.powf(src),
                         Op::Set => *tar = src,
+                        // Extended
                         Op::Abs => *tar = src.abs(),
                         Op::Acos => *tar = src.acos(),
                         Op::Acosh => *tar = src.acosh(),
@@ -115,18 +117,37 @@ fn process_segment<O: AsRef<[Operation]>>(
                         Op::Atanh => *tar = src.atanh(),
                         Op::Cbrt => *tar = src.cbrt(),
                         Op::Ceil => *tar = src.ceil(),
+                        Op::Copysign => *tar = tar.copysign(src),
                         Op::Cos => *tar = src.cos(),
                         Op::Cosh => *tar = src.cosh(),
+                        Op::Degrees => *tar = src.to_degrees(),
+                        Op::Diveuclid => *tar = tar.div_euclid(src),
+                        Op::Exp => *tar = src.exp(),
+                        Op::Exp2 => *tar = src.exp2(),
+                        Op::Expm1 => *tar = src.exp_m1(),
                         Op::Floor => *tar = src.floor(),
+                        Op::Fract => *tar = src.fract(),
+                        Op::Hypot => *tar = tar.hypot(src),
+                        Op::Ln => *tar = src.ln(),
+                        Op::Ln1p => *tar = src.ln_1p(),
                         Op::Log => *tar = tar.log(src),
+                        Op::Log10 => *tar = src.log10(),
+                        Op::Log2 => *tar = src.log2(),
                         Op::Max => *tar = tar.max(src),
                         Op::Min => *tar = tar.min(src),
+                        Op::Radians => *tar = src.to_radians(),
+                        Op::Recip => *tar = src.recip(),
+                        Op::Remeuclid => *tar = tar.rem_euclid(src),
                         Op::Round => *tar = src.round(),
+                        Op::Signum => *tar = src.signum(),
                         Op::Sin => *tar = src.sin(),
                         Op::Sinh => *tar = src.sinh(),
                         Op::Sqrt => *tar = src.sqrt(),
                         Op::Tan => *tar = src.tan(),
                         Op::Tanh => *tar = src.tanh(),
+                        Op::Trunc => *tar = src.trunc(),
+                        // Custom
+                        Op::Invert => *tar = src - *tar,
                     };
                 }
                 Operation::Space(new_space) => {

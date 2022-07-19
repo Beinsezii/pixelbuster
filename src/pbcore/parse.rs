@@ -5,6 +5,7 @@ use std::collections::HashMap;
 // structs {{{
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum Op {
+    // Base
     Add,
     Sub,
     Mul,
@@ -12,6 +13,7 @@ pub enum Op {
     Mod,
     Pow,
     Set,
+    // Extended
     Abs,
     Acos,
     Acosh,
@@ -22,18 +24,37 @@ pub enum Op {
     Atanh,
     Cbrt,
     Ceil,
+    Copysign,
     Cos,
     Cosh,
+    Degrees,
+    Diveuclid,
+    Exp,
+    Exp2,
+    Expm1,
     Floor,
+    Fract,
+    Hypot,
+    Ln,
+    Ln1p,
     Log,
+    Log2,
+    Log10,
     Max,
     Min,
+    Radians,
+    Recip,
+    Remeuclid,
     Round,
+    Signum,
     Sin,
     Sinh,
     Sqrt,
     Tan,
     Tanh,
+    Trunc,
+    // Custom
+    Invert,
 }
 
 #[derive(Clone, Copy, Debug, PartialEq)]
@@ -153,6 +174,7 @@ fn src(item: &str, space: Space) -> Result<Obj, ()> {
 
 fn op(item: &str) -> Result<Op, ()> {
     match item.as_ref() {
+        // Base
         "+=" | "+" | "add" => Ok(Op::Add),
         "-=" | "-" | "sub" => Ok(Op::Sub),
         "*=" | "*" | "mul" => Ok(Op::Mul),
@@ -160,6 +182,7 @@ fn op(item: &str) -> Result<Op, ()> {
         "%=" | "%" | "mod" => Ok(Op::Mod),
         "**" | "^" | "pow" => Ok(Op::Pow),
         "=" | "set" => Ok(Op::Set),
+        // Extended
         "abs" => Ok(Op::Abs),
         "acos" => Ok(Op::Acos),
         "acosh" => Ok(Op::Acosh),
@@ -170,18 +193,37 @@ fn op(item: &str) -> Result<Op, ()> {
         "atanh" => Ok(Op::Atanh),
         "cbrt" => Ok(Op::Cbrt),
         "ceil" => Ok(Op::Ceil),
+        "copysign" => Ok(Op::Copysign),
         "cos" => Ok(Op::Cos),
         "cosh" => Ok(Op::Cosh),
+        "degrees" => Ok(Op::Degrees),
+        "diveuclid" => Ok(Op::Diveuclid),
+        "exp" => Ok(Op::Exp),
+        "exp2" => Ok(Op::Exp2),
+        "expm1" => Ok(Op::Expm1),
         "floor" => Ok(Op::Floor),
+        "fract" => Ok(Op::Fract),
+        "hypot" => Ok(Op::Hypot),
+        "ln" => Ok(Op::Ln),
+        "ln1p" => Ok(Op::Ln1p),
         "log" => Ok(Op::Log),
+        "log2" => Ok(Op::Log2),
+        "log10" => Ok(Op::Log10),
         "max" => Ok(Op::Max),
         "min" => Ok(Op::Min),
+        "radians" => Ok(Op::Radians),
+        "recip" => Ok(Op::Recip),
+        "remeuclid" => Ok(Op::Remeuclid),
         "round" => Ok(Op::Round),
+        "signum" => Ok(Op::Signum),
         "sin" => Ok(Op::Sin),
         "sinh" => Ok(Op::Sinh),
         "sqrt" => Ok(Op::Sqrt),
         "tan" => Ok(Op::Tan),
         "tanh" => Ok(Op::Tanh),
+        "trunc" => Ok(Op::Trunc),
+        // Custom
+        "invert" => Ok(Op::Invert),
         _ => Err(()),
     }
 }

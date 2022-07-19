@@ -53,9 +53,10 @@ Operation:
     * '%=' or '%' or 'mod' => Mod
     * '**' or '^' or 'pow' => Pow
     * '=' or 'set' => Set
-
-    * abs acos acosh asin asinh atan atan2 atanh cbrt ceil
-    * cos cosh floor log max min round sin sinh sqrt tan tanh
+    * abs acos acosh asin asinh atan atan2 atanh cbrt ceil copysign cos cosh
+    * degrees diveuclid exp exp2 expm1 floor fract hypot ln ln1p log log10 log2
+    * max min radians recip remeuclid round signum sin sinh sqrt tan tanh trunc
+    * invert - a invert b == a = b - a
 
 Comparison:
     * '==' or 'eq'
