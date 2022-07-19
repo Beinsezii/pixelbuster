@@ -1,4 +1,4 @@
-# Pixelbuster 0.1.0
+# Pixelbuster 0.2.0
 A pixel math library because I can
 
 ## Features
