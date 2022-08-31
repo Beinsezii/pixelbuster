@@ -341,7 +341,8 @@ mod tests {
     // const LCH: [f32; 3] = [44.679, 89.930, 296.985];
 
     // Taken from BABL, which I honestly trust more
-    const RGB: [f32; 3] = [0.200000, 0.350000, 0.950000];
+    const SRGB: [f32; 3] = [0.200000, 0.350000, 0.950000];
+    const LRGB: [f32; 3] = [0.033105, 0.100482, 0.890006];
     const HSV: [f32; 3] = [0.633333, 0.789474, 0.950000];
     // interestingly, these two fail horrendously
     const XYZ: [f32; 3] = [0.180448, 0.133343, 0.645614]; // seems they don't scale XYZ either
@@ -355,7 +356,7 @@ mod tests {
 
     #[test]
     fn hsv_up() {
-        let mut pixel = RGB;
+        let mut pixel = SRGB;
         srgb_to_hsv(&mut pixel);
         pixcmp(pixel, HSV);
     }
@@ -364,13 +365,26 @@ mod tests {
     fn hsv_down() {
         let mut pixel = HSV;
         hsv_to_srgb(&mut pixel);
-        pixcmp(pixel, RGB);
+        pixcmp(pixel, SRGB);
+    }
+
+    #[test]
+    fn lrgb_up() {
+        let mut pixel = SRGB;
+        srgb_to_lrgb(&mut pixel);
+        pixcmp(pixel, LRGB);
+    }
+
+    #[test]
+    fn lrgb_down() {
+        let mut pixel = LRGB;
+        lrgb_to_srgb(&mut pixel);
+        pixcmp(pixel, SRGB);
     }
 
     #[test]
     fn xyz_up() {
-        let mut pixel = RGB;
-        srgb_to_lrgb(&mut pixel);
+        let mut pixel = LRGB;
         lrgb_to_xyz(&mut pixel);
         pixcmp(pixel, XYZ);
     }
@@ -379,8 +393,7 @@ mod tests {
     fn xyz_down() {
         let mut pixel = XYZ;
         xyz_to_lrgb(&mut pixel);
-        lrgb_to_srgb(&mut pixel);
-        pixcmp(pixel, RGB);
+        pixcmp(pixel, LRGB);
     }
 
     #[test]
@@ -413,10 +426,10 @@ mod tests {
 
     #[test]
     fn sweep() {
-        let mut pixel = RGB;
+        let mut pixel = SRGB;
         convert_space(Space::SRGB, Space::LCH, &mut pixel);
         convert_space(Space::LCH, Space::SRGB, &mut pixel);
-        pixcmp(pixel, RGB)
+        pixcmp(pixel, SRGB)
     }
 }
 // TESTS }}}
