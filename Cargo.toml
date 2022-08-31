@@ -17,6 +17,7 @@ rfd = {version = "0.9", optional = true}
 
 [features]
 gui = ["dep:eframe", "dep:image", "dep:rfd"]
+D50 = []
 
 [lib]
 crate-type = ["lib", "cdylib"]

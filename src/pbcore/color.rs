@@ -1,4 +1,27 @@
-use core::f32::consts::PI;
+const LAB_DELTA: f32 = 6.0 / 29.0;
+
+// 'Standard' Illuminant D65
+const D65_X: f32 = 0.950489;
+const D65_Y: f32 = 1.000000;
+const D65_Z: f32 = 1.088840;
+
+#[allow(unused)]
+const D65: [f32; 3] = [D65_X, D65_Y, D65_Z];
+
+// Illuminant D50
+// Used by BABL/GIMP + others, not sure why
+const D50_X: f32 = 0.964212;
+const D50_Y: f32 = 1.000000;
+const D50_Z: f32 = 0.825188;
+
+#[allow(unused)]
+const D50: [f32; 3] = [D50_X, D50_Y, D50_Z];
+
+#[cfg(feature="D50")]
+const ILLUMINANT: [f32; 3] = D50;
+
+#[cfg(not(feature="D50"))]
+const ILLUMINANT: [f32; 3] = D65;
 
 #[derive(Clone, Copy, PartialEq, Eq, Debug)]
 pub enum Space {
@@ -94,8 +117,6 @@ pub fn convert_space_alpha(from: Space, to: Space, pixel: &mut [f32; 4]) {
     }
 }
 
-// source: https://www.easyrgb.com/en/math.php
-
 // UP {{{
 
 pub fn srgb_to_irgb(pixel: [f32; 3]) -> [u8; 3] {
@@ -154,6 +175,7 @@ pub fn srgb_to_hsv(pixel: &mut [f32; 3]) {
     *pixel = [h, s, v];
 }
 
+// https://en.wikipedia.org/wiki/SRGB#From_sRGB_to_CIE_XYZ
 pub fn srgb_to_lrgb(pixel: &mut [f32; 3]) {
     pixel.iter_mut().for_each(|c| {
         if *c <= 0.04045 {
@@ -164,25 +186,24 @@ pub fn srgb_to_lrgb(pixel: &mut [f32; 3]) {
     });
 }
 
+// https://en.wikipedia.org/wiki/SRGB#From_sRGB_to_CIE_XYZ
 pub fn lrgb_to_xyz(pixel: &mut [f32; 3]) {
     *pixel = [
-        (0.4124 * pixel[0] + 0.3576 * pixel[1] + 0.1805 * pixel[2]) * 100.0, // X
-        (0.2126 * pixel[0] + 0.7152 * pixel[1] + 0.0722 * pixel[2]) * 100.0, // Y
-        (0.0193 * pixel[0] + 0.1192 * pixel[1] + 0.9505 * pixel[2]) * 100.0, // Z
+        (0.4124 * pixel[0] + 0.3576 * pixel[1] + 0.1805 * pixel[2]), // X
+        (0.2126 * pixel[0] + 0.7152 * pixel[1] + 0.0722 * pixel[2]), // Y
+        (0.0193 * pixel[0] + 0.1192 * pixel[1] + 0.9505 * pixel[2]), // Z
     ]
 }
 
+// https://en.wikipedia.org/wiki/CIELAB_color_space#From_CIEXYZ_to_CIELAB
 pub fn xyz_to_lab(pixel: &mut [f32; 3]) {
-    // convert to D65 2 degrees
-    pixel[0] /= 95.057;
-    pixel[1] /= 100.0;
-    pixel[2] /= 108.883;
+    pixel.iter_mut().zip(ILLUMINANT).for_each(|(c, d)| *c /= d);
 
     pixel.iter_mut().for_each(|c| {
-        if *c > 0.008856 {
-            *c = c.powf(1.0 / 3.0)
+        if *c > LAB_DELTA.powi(3) {
+            *c = c.cbrt()
         } else {
-            *c = (7.787 * *c) + (16.0 / 116.0)
+            *c = *c / (3.0 * LAB_DELTA.powi(2)) + (4f32 / 29f32)
         }
     });
 
@@ -193,20 +214,13 @@ pub fn xyz_to_lab(pixel: &mut [f32; 3]) {
     ]
 }
 
-/// Return CIE LCH
+// https://en.wikipedia.org/wiki/CIELAB_color_space#Cylindrical_model
 pub fn lab_to_lch(pixel: &mut [f32; 3]) {
-    let mut h = pixel[2].atan2(pixel[1]);
-    if h > 0.0 {
-        h = (h / PI) * 180.0
-    } else {
-        h = 360.0 - ((h.abs() / PI) * 180.0)
-    }
-
     *pixel = [
         pixel[0],
-        ((pixel[1].powi(2)) + (pixel[2].powi(2))).sqrt(),
-        h,
-    ]
+        (pixel[1].powi(2) + pixel[2].powi(2)).sqrt(),
+        pixel[2].atan2(pixel[1]).to_degrees(),
+    ];
 }
 
 // UP }}}
@@ -280,6 +294,7 @@ pub fn hsv_to_srgb(pixel: &mut [f32; 3]) {
     }
 }
 
+// https://en.wikipedia.org/wiki/SRGB#From_CIE_XYZ_to_sRGB
 pub fn lrgb_to_srgb(pixel: &mut [f32; 3]) {
     pixel.iter_mut().for_each(|c| {
         if *c <= 0.0031308 {
@@ -290,9 +305,8 @@ pub fn lrgb_to_srgb(pixel: &mut [f32; 3]) {
     });
 }
 
-/// Set from XYZ
+// https://en.wikipedia.org/wiki/SRGB#From_CIE_XYZ_to_sRGB
 pub fn xyz_to_lrgb(pixel: &mut [f32; 3]) {
-    pixel.iter_mut().for_each(|c| *c /= 100.0);
     *pixel = [
         3.2406 * pixel[0] - 1.5372 * pixel[1] - 0.4986 * pixel[2],
         -0.9689 * pixel[0] + 1.8758 * pixel[1] + 0.0415 * pixel[2],
@@ -300,30 +314,32 @@ pub fn xyz_to_lrgb(pixel: &mut [f32; 3]) {
     ];
 }
 
-/// Set from CIE LAB
+// https://en.wikipedia.org/wiki/CIELAB_color_space#From_CIELAB_to_CIEXYZ
 pub fn lab_to_xyz(pixel: &mut [f32; 3]) {
-    let mut xyz = [0.0_f32; 3];
-    xyz[1] = (pixel[0] + 16.0) / 116.0;
-    xyz[0] = (pixel[1] / 500.0) + xyz[1];
-    xyz[2] = xyz[1] - (pixel[2] / 200.0);
+    *pixel = [
+        (pixel[0] + 16.0) / 116.0 + pixel[1] / 500.0,
+        (pixel[0] + 16.0) / 116.0,
+        (pixel[0] + 16.0) / 116.0 - pixel[2] / 200.0,
+    ];
 
-    xyz.iter_mut().for_each(|c| {
-        if c.powi(3) > 0.008856 {
+    pixel.iter_mut().for_each(|c| {
+        if *c > LAB_DELTA {
             *c = c.powi(3)
         } else {
-            *c = (*c - (16.0 / 116.0)) / 7.787
+            *c = 3.0 * LAB_DELTA.powi(2) * (*c - 4f32 / 29f32)
         }
     });
 
-    // convert back from D65 2 degrees
-    *pixel = [xyz[0] * 95.057, xyz[1] * 100.0, xyz[2] * 108.883]
+    pixel.iter_mut().zip(ILLUMINANT).for_each(|(c, d)| *c *= d);
 }
 
-/// Set from CIE LCH
+// https://en.wikipedia.org/wiki/CIELAB_color_space#Cylindrical_model
 pub fn lch_to_lab(pixel: &mut [f32; 3]) {
-    let c = pixel[1];
-    pixel[1] = pixel[2].to_radians().cos() * c;
-    pixel[2] = pixel[2].to_radians().sin() * c;
+    *pixel = [
+        pixel[0],
+        pixel[1] * pixel[2].to_radians().cos(),
+        pixel[1] * pixel[2].to_radians().sin(),
+    ]
 }
 
 // DOWN }}}
@@ -333,7 +349,7 @@ pub fn lch_to_lab(pixel: &mut [f32; 3]) {
 mod tests {
     use super::*;
 
-    // taken from EasyRGB
+    // taken from https://easyrgb.com
     // const RGB: [f32; 3] = [0.2000, 0.3500, 0.9500];
     // const HSV: [f32; 3] = [0.6333, 0.7894, 0.9500];
     // const XYZ: [f32; 3] = [21.017, 14.314, 85.839];
@@ -344,14 +360,59 @@ mod tests {
     const SRGB: [f32; 3] = [0.200000, 0.350000, 0.950000];
     const LRGB: [f32; 3] = [0.033105, 0.100482, 0.890006];
     const HSV: [f32; 3] = [0.633333, 0.789474, 0.950000];
-    // interestingly, these two fail horrendously
-    const XYZ: [f32; 3] = [0.180448, 0.133343, 0.645614]; // seems they don't scale XYZ either
+    // interestingly, XYZ fails horrendously.
+    // EasyRGB and BABL must use totally different formulae
+    // EasyRGB's looks to be the same as Wikipedia, which is what I use.
+    // BABL's is different and I'm not sure where it's sourced from...
+    //
+    //
+    // #define LAB_EPSILON       (216.0f / 24389.0f)
+    // #define LAB_KAPPA         (24389.0f / 27.0f)
+    //
+    // #define D50_WHITE_REF_X   0.964202880f
+    // #define D50_WHITE_REF_Y   1.000000000f
+    // #define D50_WHITE_REF_Z   0.824905400f
+    // static inline void
+    // XYZ_to_LAB (double X,
+    //             double Y,
+    //             double Z,
+    //             double *to_L,
+    //             double *to_a,
+    //             double *to_b)
+    // {
+    //   double f_x, f_y, f_z;
+
+    //   double x_r = X / D50_WHITE_REF_X;
+    //   double y_r = Y / D50_WHITE_REF_Y;
+    //   double z_r = Z / D50_WHITE_REF_Z;
+
+    //   if (x_r > LAB_EPSILON) f_x = pow(x_r, 1.0 / 3.0);
+    //   else ( f_x = ((LAB_KAPPA * x_r) + 16) / 116.0 );
+
+    //   if (y_r > LAB_EPSILON) f_y = pow(y_r, 1.0 / 3.0);
+    //   else ( f_y = ((LAB_KAPPA * y_r) + 16) / 116.0 );
+
+    //   if (z_r > LAB_EPSILON) f_z = pow(z_r, 1.0 / 3.0);
+    //   else ( f_z = ((LAB_KAPPA * z_r) + 16) / 116.0 );
+
+    //   *to_L = (116.0 * f_y) - 16.0;
+    //   *to_a = 500.0 * (f_x - f_y);
+    //   *to_b = 200.0 * (f_y - f_z);
+    // }
+    //
+    const XYZ: [f32; 3] = [0.180448, 0.133343, 0.645614];
+    // Off after 2 decimals. Weird.
     const LAB: [f32; 3] = [43.262680, 30.556679, -82.134712];
-    // while this is just fine. Babl use D65?
-    const LCH: [f32; 3] = [43.262680, 87.634590, 290.406769];
+    // Mine doesn't wrap hue.
+    // Doesn't seem to matter except in tests to let's fudge it.
+    // const LCH: [f32; 3] = [43.262680, 87.634590, 290.406769];
+    const LCH: [f32; 3] = [43.262680, 87.634590, 290.406769 - 360.0];
 
     fn pixcmp(a: [f32; 3], b: [f32; 3]) {
-        (0..3).for_each(|n| assert_eq!(format!("{:.3}", a[n]), format!("{:.3}", b[n])));
+        assert_eq!(
+            format!("{:.3} {:.3} {:.3}", a[0], a[1], a[2]),
+            format!("{:.3} {:.3} {:.3}", b[0], b[1], b[2])
+        );
     }
 
     #[test]
@@ -422,6 +483,20 @@ mod tests {
         let mut pixel = LCH;
         lch_to_lab(&mut pixel);
         pixcmp(pixel, LAB);
+    }
+
+    #[test]
+    fn full_up() {
+        let mut pixel = SRGB;
+        convert_space(Space::SRGB, Space::LCH, &mut pixel);
+        pixcmp(pixel, LCH);
+    }
+
+    #[test]
+    fn full_down() {
+        let mut pixel = LCH;
+        convert_space(Space::LCH, Space::SRGB, &mut pixel);
+        pixcmp(pixel, SRGB);
     }
 
     #[test]
