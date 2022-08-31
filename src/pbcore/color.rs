@@ -333,11 +333,21 @@ pub fn lch_to_lab(pixel: &mut [f32; 3]) {
 mod tests {
     use super::*;
 
-    const RGB: [f32; 3] = [0.2000, 0.3500, 0.9500];
-    const HSV: [f32; 3] = [0.6333, 0.7894, 0.9500];
-    const XYZ: [f32; 3] = [21.017, 14.314, 85.839];
-    const LAB: [f32; 3] = [44.679, 40.806, -80.139];
-    const LCH: [f32; 3] = [44.679, 89.930, 296.985];
+    // taken from EasyRGB
+    // const RGB: [f32; 3] = [0.2000, 0.3500, 0.9500];
+    // const HSV: [f32; 3] = [0.6333, 0.7894, 0.9500];
+    // const XYZ: [f32; 3] = [21.017, 14.314, 85.839];
+    // const LAB: [f32; 3] = [44.679, 40.806, -80.139];
+    // const LCH: [f32; 3] = [44.679, 89.930, 296.985];
+
+    // Taken from BABL, which I honestly trust more
+    const RGB: [f32; 3] = [0.200000, 0.350000, 0.950000];
+    const HSV: [f32; 3] = [0.633333, 0.789474, 0.950000];
+    // interestingly, these two fail horrendously
+    const XYZ: [f32; 3] = [0.180448, 0.133343, 0.645614]; // seems they don't scale XYZ either
+    const LAB: [f32; 3] = [43.262680, 30.556679, -82.134712];
+    // while this is just fine. Babl use D65?
+    const LCH: [f32; 3] = [43.262680, 87.634590, 290.406769];
 
     fn pixcmp(a: [f32; 3], b: [f32; 3]) {
         (0..3).for_each(|n| assert_eq!(format!("{:.3}", a[n]), format!("{:.3}", b[n])));
