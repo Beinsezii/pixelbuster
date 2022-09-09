@@ -7,8 +7,7 @@ use num_cpus;
 pub mod parse;
 pub use parse::{parse_ops, Cmp, Obj, Op, OpError, Operation};
 
-pub mod color;
-pub use color::{convert_space, convert_space_alpha, Space};
+pub use colcon::{convert_space, convert_space_alpha, Space};
 
 // TODO: make run-able without alpha.
 // TODO: Result<> instead of panic

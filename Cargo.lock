@@ -249,6 +249,12 @@ dependencies = [
 ]
 
 [[package]]
+name = "colcon"
+version = "0.1.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "31612522527ec89724234b064f129d634cbacd4eabaf15e09f353e73c78f70aa"
+
+[[package]]
 name = "color_quant"
 version = "1.1.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1468,6 +1474,7 @@ checksum = "e0a7ae3ac2f1173085d398531c705756c94a4c56843785df85a60c1a0afac116"
 name = "pixelbuster"
 version = "0.2.0"
 dependencies = [
+ "colcon",
  "easy-parallel",
  "eframe",
  "fastrand",

@@ -11,6 +11,9 @@ easy-parallel = "3"
 fastrand = "1"
 num_cpus = "1"
 
+# mine
+colcon = "0.1.0"
+
 eframe = {version = "0.18", optional = true}
 image = {version = "0.24", optional = true}
 rfd = {version = "0.9", optional = true}
