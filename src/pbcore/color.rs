@@ -17,10 +17,10 @@ const D50_Z: f32 = 0.825188;
 #[allow(unused)]
 const D50: [f32; 3] = [D50_X, D50_Y, D50_Z];
 
-#[cfg(feature="D50")]
+#[cfg(feature = "D50")]
 const ILLUMINANT: [f32; 3] = D50;
 
-#[cfg(not(feature="D50"))]
+#[cfg(not(feature = "D50"))]
 const ILLUMINANT: [f32; 3] = D65;
 
 #[derive(Clone, Copy, PartialEq, Eq, Debug)]
@@ -121,25 +121,24 @@ pub fn convert_space_alpha(from: Space, to: Space, pixel: &mut [f32; 4]) {
 
 pub fn srgb_to_irgb(pixel: [f32; 3]) -> [u8; 3] {
     [
-        ((pixel[0] * 255.0) as u8).min(0).max(255),
-        ((pixel[1] * 255.0) as u8).min(0).max(255),
-        ((pixel[2] * 255.0) as u8).min(0).max(255),
+        ((pixel[0] * 255.0).max(0.0).min(255.0) as u8),
+        ((pixel[1] * 255.0).max(0.0).min(255.0) as u8),
+        ((pixel[2] * 255.0).max(0.0).min(255.0) as u8),
     ]
 }
 
 /// Return hex string
-// pub fn as_hex(self) -> String {
-//     let mut hex = String::from("#");
+pub fn irgb_to_hex(pixel: [u8; 3]) -> String {
+    let mut hex = String::from("#");
 
-//     for x in self.as_irgb() {
-//         n1 = int(x / 16)
-//         n2 = x % 16
-//         for n in (n1, n2):
-//      value      hex += str(chr((n - 10) + 65) if n >= 10 else n)
-//     }
+    pixel.into_iter().for_each(|c| {
+        [c / 16, c % 16]
+            .into_iter()
+            .for_each(|n| hex.push(if n >= 10 { n + 55 } else { n + 48 } as char))
+    });
 
-//     hex
-// }
+    hex
+}
 
 pub fn srgb_to_hsv(pixel: &mut [f32; 3]) {
     let vmin = pixel[0].min(pixel[1]).min(pixel[2]);
@@ -235,35 +234,65 @@ pub fn irgb_to_srgb(pixel: [u8; 3]) -> [f32; 3] {
     ]
 }
 
-// /// Set from hex string
-// pub fn set_hex(self, hex: str) {
-//     hex = hex.lstrip('#').upper()
+/// Convert from hex string
+pub fn hex_to_irgb(hex: &str) -> Result<[u8; 3], String> {
+    let hex = hex.trim().to_ascii_uppercase();
 
-//     hexR = hex[0:2]
-//     hexG = hex[2:4]
-//     hexB = hex[4:6]
+    let mut chars = hex.chars();
+    if chars.as_str().starts_with('#') {
+        chars.next();
+    }
 
-//     rgb = [0, 0, 0]
-//     for n, x in enumerate((hexR, hexG, hexB)):
-//         # 16s place
-//         if x[0].isalpha():
-//             rgb[n] += (ord(x[0]) - 65 + 10) * 16
-//         elif x[0].isdigit():
-//             rgb[n] += int(x[0]) * 16
-//         else:
-//             print("This should be impossible.")
-//             raise ValueError
-//         # 1s place
-//         if x[1].isalpha():
-//             rgb[n] += (ord(x[1]) - 65 + 10)
-//         elif x[1].isdigit():
-//             rgb[n] += int(x[1])
-//         else:
-//             print("This should be impossible.")
-//             raise ValueError
+    let ids: Vec<u32> = if chars.as_str().len() == 6 {
+        chars
+            .map(|c| {
+                let u = c as u32;
+                if 57 >= u && u >= 48 {
+                    Ok(u - 48)
+                } else if 70 >= u && u >= 65 {
+                    Ok(u - 55)
+                } else {
+                    Err(String::from("Hex character ") + &String::from(c) + " out of bounds")
+                }
+            })
+            .collect()
+    } else {
+        Err(String::from("Hex string too long!"))
+    }?;
 
-//     return self.set_irgb(*rgb)
-// }
+    Ok([
+        ((ids[0]) * 16 + ids[1]) as u8,
+        ((ids[2]) * 16 + ids[3]) as u8,
+        ((ids[4]) * 16 + ids[5]) as u8,
+    ])
+
+    // hex = hex.lstrip('#').upper()
+
+    // hexR = hex[0:2]
+    // hexG = hex[2:4]
+    // hexB = hex[4:6]
+
+    // rgb = [0, 0, 0]
+    // for n, x in enumerate((hexR, hexG, hexB)):
+    //     # 16s place
+    //     if x[0].isalpha():
+    //         rgb[n] += (ord(x[0]) - 65 + 10) * 16
+    //     elif x[0].isdigit():
+    //         rgb[n] += int(x[0]) * 16
+    //     else:
+    //         print("This should be impossible.")
+    //         raise ValueError
+    //     # 1s place
+    //     if x[1].isalpha():
+    //         rgb[n] += (ord(x[1]) - 65 + 10)
+    //     elif x[1].isdigit():
+    //         rgb[n] += int(x[1])
+    //     else:
+    //         print("This should be impossible.")
+    //         raise ValueError
+
+    // return self.set_irgb(*rgb)
+}
 
 pub fn hsv_to_srgb(pixel: &mut [f32; 3]) {
     if pixel[1] == 0.0 {
@@ -357,6 +386,8 @@ mod tests {
     // const LCH: [f32; 3] = [44.679, 89.930, 296.985];
 
     // Taken from BABL, which I honestly trust more
+    const HEX: &str = "#3359F2";
+    const IRGB: [u8; 3] = [51, 89, 242];
     const SRGB: [f32; 3] = [0.200000, 0.350000, 0.950000];
     const LRGB: [f32; 3] = [0.033105, 0.100482, 0.890006];
     const HSV: [f32; 3] = [0.633333, 0.789474, 0.950000];
@@ -505,6 +536,26 @@ mod tests {
         convert_space(Space::SRGB, Space::LCH, &mut pixel);
         convert_space(Space::LCH, Space::SRGB, &mut pixel);
         pixcmp(pixel, SRGB)
+    }
+
+    #[test]
+    fn to_irgb() {
+        assert_eq!(IRGB, srgb_to_irgb(SRGB))
+    }
+
+    #[test]
+    fn from_irgb() {
+        assert_eq!(SRGB, irgb_to_srgb(IRGB))
+    }
+
+    #[test]
+    fn to_hex() {
+        assert_eq!(HEX, irgb_to_hex(IRGB))
+    }
+
+    #[test]
+    fn from_hex() {
+        assert_eq!(IRGB, hex_to_irgb(HEX).unwrap())
     }
 }
 // TESTS }}}
