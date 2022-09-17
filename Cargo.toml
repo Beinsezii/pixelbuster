@@ -11,6 +11,8 @@ easy-parallel = "3"
 fastrand = "1"
 num_cpus = "1"
 
+wgpu = {"0.13", optional = true}
+
 # mine
 colcon = "0.1.0"
 
@@ -20,7 +22,7 @@ rfd = {version = "0.9", optional = true}
 
 [features]
 gui = ["dep:eframe", "dep:image", "dep:rfd"]
-D50 = []
+gpu = ["dep:wgpu"]
 
 [lib]
 crate-type = ["lib", "cdylib"]
