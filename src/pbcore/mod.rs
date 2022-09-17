@@ -220,19 +220,52 @@ pub fn process<O: AsRef<[Operation]>>(
         // dumb way to make sure it splits well + overhead avoidance.
         process_segment(ops, pixels, 0, 0, width, height, externals)
     } else {
-        let chunk_size: usize = pixels.len() / 4 / num_cpus::get() * 4;
-        Parallel::new()
-            .each(pixels.chunks_mut(chunk_size).enumerate(), |(n, chunk)| {
-                process_segment(
-                    ops,
-                    chunk,
-                    (chunk_size / 4 * n) % width,
-                    (chunk_size / 4 * n) / width,
-                    width,
-                    height,
-                    externals,
-                );
-            })
-            .run();
+        #[cfg(not(feature = "gpu"))]
+        {
+            let chunk_size: usize = pixels.len() / 4 / num_cpus::get() * 4;
+            Parallel::new()
+                .each(pixels.chunks_mut(chunk_size).enumerate(), |(n, chunk)| {
+                    process_segment(
+                        ops,
+                        chunk,
+                        (chunk_size / 4 * n) % width,
+                        (chunk_size / 4 * n) / width,
+                        width,
+                        height,
+                        externals,
+                    );
+                })
+                .run();
+        }
+        #[cfg(feature = "gpu")]
+        pollster::block_on(async {
+            println!("INSTNACE");
+            let instance = wgpu::Instance::new(wgpu::Backends::all());
+
+            println!("ADAPTER");
+            // crash here BadAccess
+            // what even am I doing help
+            let adapter = instance
+                .request_adapter(&wgpu::RequestAdapterOptions{
+                    power_preference: wgpu::PowerPreference::HighPerformance,
+                    force_fallback_adapter: false,
+                    compatible_surface: None,
+                })
+                .await
+                .expect("Could not create GPU adapter!");
+
+            println!("DEVICE");
+            let (device, queue) = adapter
+                .request_device(&wgpu::DeviceDescriptor{
+                    label: None,
+                    features: wgpu::Features::empty(),
+                    limits: wgpu::Limits::default(),
+                }, None)
+                .await
+                .expect("GPU Device request failed!");
+
+            println!("SHADER");
+            let shader_module = device.create_shader_module(wgpu::include_wgsl!("pbcore.wgsl"));
+        });
     }
 }

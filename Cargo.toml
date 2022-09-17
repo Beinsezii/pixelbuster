@@ -11,18 +11,25 @@ easy-parallel = "3"
 fastrand = "1"
 num_cpus = "1"
 
-wgpu = {"0.13", optional = true}
-
-# mine
+# own crate
 colcon = "0.1.0"
 
+# gpu
+wgpu = {version = "0.13", optional = true}
+pollster = {version = "0.2", optional = true}
+env_logger = {version = "0.9", optional = true}
+bytemuck = {version = "1", optional = true}
+
+# gui
 eframe = {version = "0.18", optional = true}
 image = {version = "0.24", optional = true}
 rfd = {version = "0.9", optional = true}
 
 [features]
 gui = ["dep:eframe", "dep:image", "dep:rfd"]
-gpu = ["dep:wgpu"]
+gpu = ["dep:wgpu", "dep:pollster", "dep:env_logger", "dep:bytemuck"]
+
+default = ["gpu"]
 
 [lib]
 crate-type = ["lib", "cdylib"]
