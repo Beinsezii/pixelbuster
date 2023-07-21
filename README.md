@@ -1,4 +1,4 @@
-# Pixelbuster 0.2.0
+# Pixelbuster 0.2.1
 A pixel math library because I can
 
 ## Features
@@ -13,7 +13,7 @@ A pixel math library because I can
   * [GIMP plugin here](https://github.com/Beinsezii/bsz-gimp-plugins)
   * a simple GUI can be built with `--features=gui` or found in the releases
 
-## WIP/Why this isn't 1.0 yet
+## Goals for 1.0
   * SIMD
   * Docs
   * Non-alpha

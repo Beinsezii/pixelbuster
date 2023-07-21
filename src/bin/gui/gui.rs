@@ -13,7 +13,8 @@ use eframe::{
         panel::{CentralPanel, SidePanel},
         text::LayoutJob,
         widgets::{DragValue, Slider, TextEdit},
-        Color32, ColorImage, Context, FontId, Stroke, Style, TextFormat, TextureHandle, Visuals,
+        Color32, ColorImage, Context, FontId, Stroke, Style, TextFormat, TextureHandle,
+        TextureOptions, Visuals,
     },
     App, Frame,
 };
@@ -188,7 +189,7 @@ impl App for PBGui {
                         nex = iter.next();
                     }
                     job.wrap.max_width = width;
-                    ui.fonts().layout_job(job)
+                    ui.fonts(|fonts| fonts.layout_job(job))
                 };
                 ui.add(
                     TextEdit::multiline(&mut self.code)
@@ -256,14 +257,14 @@ impl App for PBGui {
                     .outer_margin(0.0),
             )
             .show(ctx, |ui| {
-                match ctx.input().raw.dropped_files.get(0) {
+                ctx.input(|input| match input.raw.dropped_files.get(0) {
                     Some(f) => {
                         if let Some(p) = &f.path {
                             self.load(ctx, p)
                         }
                     }
                     None => (),
-                }
+                });
                 if let Some((img, tex)) = self.data.as_ref() {
                     let s = ctx.available_rect().size();
                     let (w, h) = (img.width() as f32, img.height() as f32);
@@ -329,6 +330,7 @@ impl PBGui {
                         [img.width() as usize, img.height() as usize],
                         &img.to_rgba8(),
                     ),
+                    TextureOptions::default(),
                 );
                 Some((img.into_rgba32f(), ctx))
             })
@@ -394,6 +396,7 @@ impl PBGui {
                         [width as usize, height as usize],
                         pixels.as_ref(),
                     ),
+                    TextureOptions::default(),
                 );
             } else {
                 *tex = ctx.load_texture(
@@ -407,6 +410,7 @@ impl PBGui {
                             .into_rgba8()
                             .as_ref(),
                     ),
+                    TextureOptions::default(),
                 )
             }
         }
