@@ -1,4 +1,4 @@
-# Pixelbuster 0.2.1
+# Pixelbuster 0.2.2
 A pixel math library because I can
 
 ## Features
@@ -26,7 +26,7 @@ See the HELP either in [code](./src/lib.rs#L10) or ui for language reference
 ### As a library
 Add this git to `Cargo.toml` and go for it. Basically nothing is documented as most of this is written at around 2 am, but I believe in you nontheless.
 
-There's currently only 2 fns available via FFI:
+There's currently 3 fns available via FFI:
 
 `void pixelbuster_ffi(char* code, char* channels, float* pixels, pixels_len: unsigned int, width: unsigned int);`
   * `code:` Null-terminated UTF-8 string with lines of code
@@ -35,6 +35,9 @@ There's currently only 2 fns available via FFI:
     * Currently must *always* have a 4th channel for alpha
   * `pixels_size:` Size of `pixels` in bytes
   * `width:` Width of image in pixels. Set to 0 if unkown.
+
+`void pixelbuster_ffi_ext(... float e1..float e9);`
+ * Same as `pixelbuster_ffi()` with 9 extra floats at the end of the signature to fill out the external variables
 
 `char* pb_help_ffi();`
 Simply returns a null-terminated UTF-8 string with HELP

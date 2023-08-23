@@ -96,6 +96,41 @@ pub extern "C" fn pixelbuster_ffi(
     pixels_size: usize,
     width: usize,
 ) {
+    pixelbuster_ffi_ext(
+        code,
+        channels,
+        pixels,
+        pixels_size,
+        width,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+    )
+}
+
+#[no_mangle]
+pub extern "C" fn pixelbuster_ffi_ext(
+    code: *const c_char,
+    channels: *const c_char,
+    pixels: *mut u8,
+    pixels_size: usize,
+    width: usize,
+    e1: f32,
+    e2: f32,
+    e3: f32,
+    e4: f32,
+    e5: f32,
+    e6: f32,
+    e7: f32,
+    e8: f32,
+    e9: f32,
+) {
     let code = unsafe {
         assert!(!code.is_null());
         std::ffi::CStr::from_ptr(code)
@@ -120,7 +155,7 @@ pub extern "C" fn pixelbuster_ffi(
         Space::try_from(channels.as_str()).unwrap_or(Space::SRGB),
         pixels,
         width,
-        None,
+        Some([e1, e2, e3, e4, e5, e6, e7, e8, e9]),
     );
 }
 
