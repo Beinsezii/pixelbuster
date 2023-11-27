@@ -12,7 +12,7 @@ fastrand = "2"
 num_cpus = "1"
 
 # mine
-colcon = "0.2"
+colcon = "0.3"
 
 eframe = {version = "0.22", optional = true, features=["wgpu"]}
 image = {version = "0.24", optional = true}

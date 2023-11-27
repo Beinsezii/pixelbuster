@@ -643,9 +643,9 @@ dependencies = [
 
 [[package]]
 name = "colcon"
-version = "0.2.0"
+version = "0.3.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "b04a1add16d659dc668f58514b8da289b604adc840745651f40e26f4c1f9b2df"
+checksum = "46e71c90b3773e42f4fc51f058a9d552f5589d0867707b1cf0e1e654622dd52f"
 
 [[package]]
 name = "color_quant"
@@ -2220,7 +2220,7 @@ checksum = "8b870d8c151b6f2fb93e84a13146138f05d02ed11c7e7c54f8826aaaf7c9f184"
 
 [[package]]
 name = "pixelbuster"
-version = "0.2.1"
+version = "0.2.2"
 dependencies = [
  "colcon",
  "easy-parallel",
