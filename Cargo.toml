@@ -33,12 +33,8 @@ required-features = ["gui"]
 opt-level = 1
 
 [profile.release]
-lto = true
-opt-level = 3
-codegen-units = 1
+lto = "thin"
 strip = true
 
 [profile.bench]
-lto = true
-opt-level = 3
-codegen-units = 1
+lto = "thin"
