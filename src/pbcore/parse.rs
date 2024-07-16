@@ -147,10 +147,16 @@ fn tar(item: &str, space: Space) -> Result<Obj, ()> {
         "e7" => Ok(Obj::Var(15)),
         "e8" => Ok(Obj::Var(16)),
         "e9" => Ok(Obj::Var(17)),
-        val => match space.to_string().to_ascii_lowercase().find(val) {
-            Some(n) => Ok(Obj::Chan(n)),
-            None => Err(()),
-        },
+        val => {
+            if let Ok(c) = val.parse::<char>() {
+                match space.channels().iter().enumerate().find(|(_, i)| **i == c) {
+                    Some((n, _)) => Ok(Obj::Chan(n)),
+                    None => Err(()),
+                }
+            } else {
+                Err(())
+            }
+        }
     }
 }
 

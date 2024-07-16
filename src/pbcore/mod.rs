@@ -1,13 +1,12 @@
 use std::f32::consts::{E, PI};
+use std::thread::{self, ScopedJoinHandle};
 
-use easy_parallel::Parallel;
 use fastrand;
-use num_cpus;
 
 pub mod parse;
 pub use parse::{parse_ops, Cmp, Obj, Op, OpError, Operation};
 
-pub use colcon::{convert_space, convert_space_alpha, Space};
+pub use colcon::{convert_space, Space};
 
 // TODO: make run-able without alpha.
 // TODO: Result<> instead of panic
@@ -44,7 +43,8 @@ fn process_segment<O: AsRef<[Operation]>>(
     };
 
     // TODO: std's new packed_simd
-    for (n, pixel) in pixels.array_chunks_mut::<4>().enumerate() {
+    for (n, pixel) in pixels.chunks_exact_mut(4).enumerate() {
+        let pixel: &mut [f32; 4] = pixel.try_into().unwrap();
         // reset space transforms for each pixel
         space = orig_space;
         // reset vars each iter
@@ -150,7 +150,7 @@ fn process_segment<O: AsRef<[Operation]>>(
                     };
                 }
                 Operation::Space(new_space) => {
-                    convert_space_alpha(*space, *new_space, pixel);
+                    convert_space(*space, *new_space, pixel);
                     space = new_space;
                 }
                 Operation::If {
@@ -196,7 +196,7 @@ fn process_segment<O: AsRef<[Operation]>>(
         }
         // restore to original if not already
         if space != orig_space {
-            convert_space_alpha(*space, *orig_space, pixel)
+            convert_space(*space, *orig_space, pixel)
         }
     }
 } // }}}
@@ -220,19 +220,27 @@ pub fn process<O: AsRef<[Operation]>>(
         // dumb way to make sure it splits well + overhead avoidance.
         process_segment(ops, pixels, 0, 0, width, height, externals)
     } else {
-        let chunk_size: usize = pixels.len() / 4 / num_cpus::get() * 4;
-        Parallel::new()
-            .each(pixels.chunks_mut(chunk_size).enumerate(), |(n, chunk)| {
-                process_segment(
-                    ops,
-                    chunk,
-                    (chunk_size / 4 * n) % width,
-                    (chunk_size / 4 * n) / width,
-                    width,
-                    height,
-                    externals,
-                );
-            })
-            .run();
+        let chunk_size: usize = pixels.len() / 4 / thread::available_parallelism().unwrap() * 4;
+        let chunks: Vec<(usize, &mut [f32])> = pixels.chunks_mut(chunk_size).enumerate().collect();
+        thread::scope(|scoped| {
+            chunks
+                .into_iter()
+                .map(|(n, chunk)| {
+                    scoped.spawn(move || {
+                        process_segment(
+                            ops,
+                            chunk,
+                            (chunk_size / 4 * n) % width,
+                            (chunk_size / 4 * n) / width,
+                            width,
+                            height,
+                            externals,
+                        )
+                    })
+                })
+                .collect::<Vec<ScopedJoinHandle<()>>>()
+                .into_iter()
+                .for_each(|jh| jh.join().unwrap());
+        });
     }
 }

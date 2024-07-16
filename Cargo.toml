@@ -1,26 +1,24 @@
 [package]
 name = "pixelbuster"
-version = "0.2.2"
+version = "0.2.3"
 authors = ["Beinsezii <beinsezii@gmail.com>"]
 edition = "2021"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-easy-parallel = "3"
+colcon = "0.10"
 fastrand = "2"
-num_cpus = "1"
-
-# mine
-colcon = "0.3"
-
+# gui
 eframe = {version = "0.22", optional = true, features=["wgpu"]}
-image = {version = "0.24", optional = true}
-rfd = {version = "0.11", optional = true}
+image = {version = "0.25", optional = true}
+rfd = {version = "0.14", optional = true}
+
+[dev-dependencies]
+criterion = "0.5"
 
 [features]
 gui = ["dep:eframe", "dep:image", "dep:rfd"]
-D50 = []
 
 [lib]
 crate-type = ["lib", "cdylib"]
@@ -29,12 +27,14 @@ crate-type = ["lib", "cdylib"]
 name = "gui"
 required-features = ["gui"]
 
+[[bench]]
+name = "ops"
+harness = false
+
 [profile.dev]
 opt-level = 1
 
 [profile.release]
 lto = "thin"
+opt-level = 3
 strip = true
-
-[profile.bench]
-lto = "thin"

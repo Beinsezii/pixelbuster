@@ -1,4 +1,4 @@
-# Pixelbuster 0.2.2
+# Pixelbuster 0.2.3
 A pixel math library because I can
 
 ## Features
@@ -48,10 +48,6 @@ Simply returns a null-terminated UTF-8 string with HELP
  1) Type code
  2) Press "update"
  3) Impress mates
-
-### Compiling
-Requires Rust 2021. Currently uses nightly features `test` for benchmarking and `array_chunks` for happiness
-`build_release.sh` will build in release mode for linux-x86_64-gnu and pc-windows-gnu, moving the binaries to ./bin/
 
 ## F.A.Q.
 Question|Answer
