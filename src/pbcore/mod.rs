@@ -42,7 +42,6 @@ fn process_segment<O: AsRef<[Operation]>>(
         ]
     };
 
-    // TODO: std's new packed_simd
     for (n, pixel) in pixels.chunks_exact_mut(4).enumerate() {
         let pixel: &mut [f32; 4] = pixel.try_into().unwrap();
         // reset space transforms for each pixel
