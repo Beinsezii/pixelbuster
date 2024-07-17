@@ -5,32 +5,53 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - name: Build Linux Release
+      - name: Build Linux Library
         run: cargo build --release
-      - name: Upload Linux Artifact
-        uses: actions/upload-artifact@v3
+      - name: Upload Linux Library
+        uses: actions/upload-artifact@v4
         with:
           name: linux_so
           path: target/release/libpixelbuster.so
+      - name: Build Linux Binary
+        run: cargo build --release --features=gui; cp target/release/gui pixelbuster_gui
+      - name: Upload Linux Binary
+        uses: actions/upload-artifact@v4
+        with:
+          name: linux_binary
+          path: pixelbuster_gui
   build-macos:
     runs-on: macos-latest
     steps:
       - uses: actions/checkout@v4
-      - name: Build MacOs Release
+      - name: Build MacOS Library
         run: cargo build --release
-      - name: Upload MacOS Artifact
-        uses: actions/upload-artifact@v3
+      - name: Upload MacOS Library
+        uses: actions/upload-artifact@v4
         with:
           name: macos_dylib
           path: target/release/libpixelbuster.dylib
+      - name: Build MacOS Binary
+        run: cargo build --release --features=gui; cp target/release/gui pixelbuster_gui
+      - name: Upload MacOS Binary
+        uses: actions/upload-artifact@v4
+        with:
+          name: macos_binary
+          path: pixelbuster_gui
   build-windows:
     runs-on: windows-latest
     steps:
       - uses: actions/checkout@v4
-      - name: Build Windows Release
+      - name: Build Windows Library
         run: cargo build --release
-      - name: Upload Windows Artifact
-        uses: actions/upload-artifact@v3
+      - name: Upload Windows Library
+        uses: actions/upload-artifact@v4
         with:
           name: windows_dll
           path: target/release/pixelbuster.dll
+      - name: Build Windows Binary
+        run: cargo build --release --features=gui; cp target/release/gui.exe pixelbuster_gui.exe
+      - name: Upload Windows Binary
+        uses: actions/upload-artifact@v4
+        with:
+          name: windows_exe
+          path: pixelbuster_gui.exe
