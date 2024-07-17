@@ -10,7 +10,7 @@ edition = "2021"
 colcon = "0.10"
 fastrand = "2"
 # gui
-eframe = {version = "0.22", optional = true, features=["wgpu"]}
+eframe = {version = "0.27", optional = true, features=["wgpu"]} # 0.28 has weird texture issues
 image = {version = "0.25", optional = true}
 rfd = {version = "0.14", optional = true}
 

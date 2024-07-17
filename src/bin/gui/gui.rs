@@ -12,7 +12,7 @@ use eframe::{
         containers::{ScrollArea, Window},
         panel::{CentralPanel, SidePanel},
         text::LayoutJob,
-        widgets::{DragValue, Slider, TextEdit},
+        widgets::{DragValue, Image, Slider, TextEdit},
         Color32, ColorImage, Context, FontId, Stroke, Style, TextFormat, TextureHandle,
         TextureOptions, Visuals,
     },
@@ -87,7 +87,7 @@ impl App for PBGui {
                         ui.label("Pixel Size: ");
                         if ui
                             .add(DragValue::new(&mut self.pixel_size).clamp_range(1..=8))
-                            .drag_released()
+                            .drag_stopped()
                         {
                             self.process(&ctx)
                         }
@@ -231,7 +231,7 @@ impl App for PBGui {
                             )
                             .smart_aim(true)
                             .clamp_to_range(false);
-                            if ui.add(slider).drag_released() {
+                            if ui.add(slider).drag_stopped() {
                                 proc = true;
                             };
                         });
@@ -269,7 +269,7 @@ impl App for PBGui {
                     let s = ctx.available_rect().size();
                     let (w, h) = (img.width() as f32, img.height() as f32);
                     let scale = (w / s.x).max(h / s.y);
-                    ui.image(tex, &[w / scale, h / scale]);
+                    ui.add(Image::from(tex).fit_to_exact_size([w / scale, h / scale].into()));
                 }
             });
     }
@@ -340,7 +340,6 @@ impl PBGui {
         }
     }
 
-    // TODO: Half/Quarter res preview.
     fn process(&mut self, ctx: &Context) {
         if let Some((img, tex)) = self.data.as_mut() {
             if self.preview {
