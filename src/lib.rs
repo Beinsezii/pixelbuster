@@ -38,6 +38,7 @@ Source:
     * 'height' - height of image
     * 'xnorm' - pixel X on scale of 0.0 -> 1.0
     * 'ynorm' - pixel Y on scale of 0.0 -> 1.0
+    * 'hk2023' - Helmholtz-Kohlrausch factor for lightnes/chroma/hue spaces
 
 Operation:
     Operations that take 2 values will source from target and source in order

@@ -1,12 +1,13 @@
 use std::f32::consts::{E, PI};
 use std::thread::{self, ScopedJoinHandle};
 
+use colcon::{convert_space, hk_high2023};
 use fastrand;
 
 pub mod parse;
 pub use parse::{parse_ops, Cmp, Obj, Op, OpError, Operation};
 
-pub use colcon::{convert_space, Space};
+pub use colcon::Space;
 
 // TODO: make run-able without alpha.
 // TODO: Result<> instead of panic
@@ -80,6 +81,7 @@ fn process_segment<O: AsRef<[Operation]>>(
                     Obj::Height => height as f32,
                     Obj::XNorm => (((n + x + y * width) % width) as f32) / width as f32,
                     Obj::YNorm => (((n + x + y * width) / width) as f32) / height as f32,
+                    Obj::HK2023 => hk_high2023(pixel),
                 }
             };
         }

@@ -81,6 +81,7 @@ pub enum Obj {
     Height,
     XNorm,
     YNorm,
+    HK2023,
 }
 
 #[derive(Clone, Debug, PartialEq)]
@@ -171,6 +172,7 @@ fn src(item: &str, space: Space) -> Result<Obj, ()> {
         "height" => Ok(Obj::Height),
         "xnorm" => Ok(Obj::XNorm),
         "ynorm" => Ok(Obj::YNorm),
+        "hk2023" => Ok(Obj::HK2023),
         val => match val.parse::<f32>() {
             Ok(f) => Ok(Obj::Num(f)),
             Err(_) => tar(val, space),
