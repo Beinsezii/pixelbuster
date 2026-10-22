@@ -49,6 +49,82 @@ Simply returns a null-terminated UTF-8 string with HELP
  2) Press "update"
  3) Impress mates
 
+### As a weapon to flex your intelligence on inferior species
+```
+# Mandlebrot viewer, z^2 + c
+#
+# Defaults, comment out if using sliders
+# max iterations
+e1 = 95
+# c center real
+e2 = -0.75
+# c center imag
+e3 = 0
+# c scale / world width
+e4 = 2.5
+# z initial real
+e5 = 0
+# z initial imag
+e6 = 0
+
+# factor = 8/(2*e1-1)
+e9 = e1; e9 += e1; e9 -= 1; e9 recip e9; e9 *= 8
+
+# aspect correction
+v8 = height; v8 /= width
+
+# c = pixel-derived complex constant
+# real
+v3 = xnorm; v3 -= 0.5; v3 *= e4; v3 += e2
+# imaginary
+v4 = 0.5; v4 -= ynorm; v4 *= e4; v4 *= v8; v4 += e3
+
+# initial z
+v1 = e5
+v2 = e6
+
+# initialize z^2 registers
+v5 = v1; v5 *= v1
+v6 = v2; v6 *= v2
+
+:loop
+
+# tmp = 2 * z_re * z_im
+v9 = v1; v9 *= v2; v9 += v9
+
+# z_re = z_re^2 - z_im^2 + c_re
+v1 = v5; v1 -= v6; v1 += v3
+
+# z_im = tmp + c_im
+v2 = v9; v2 += v4
+
+# count++
+v7 += 1
+
+# refresh z^2 registers for next iteration
+v5 = v1; v5 *= v1
+v6 = v2; v6 *= v2
+
+# stop = max(z_re^2 + z_im^2, count * factor)
+v9 = v5; v9 += v6; v8 = v7; v8 *= e9; v8 max v9
+
+if v8 <= 4 jmp loop
+
+:done
+
+oklch
+
+# lightness = 1 - sqrt((max_iterations - count) / max_iterations)
+l = e1; l -= v7; l /= e1; l sqrt l; l invert 1
+
+# stable regions black
+if l >= 1 l = 0
+
+# 20% chroma hue intensity map
+c = 0.2
+h = l; h * 270
+```
+
 ## F.A.Q.
 Question|Answer
 ---|---
